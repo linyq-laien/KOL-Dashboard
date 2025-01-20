@@ -10,30 +10,37 @@ import KOLDetailModal from '../components/KOLDetailModal';
 // 模拟数据生成函数
 function generateMockData(count: number): KOL[] {
   return Array.from({ length: count }, (_, i) => ({
-    id: `${i + 1}`,
+    id: `kol${i + 1}`,
+    kolId: `kol_${Math.random().toString(36).substring(7)}`,
+    email: `${Math.random().toString(36).substring(7)}@example.com`,
     name: `KOL ${i + 1}`,
-    email: `kol${i + 1}@example.com`,
+    bio: `Content creator focusing on ${i % 2 === 0 ? 'lifestyle' : 'fashion'}`,
+    accountLink: `https://platform.com/user${i + 1}`,
+    source: i % 3 === 0 ? 'TikTok' : i % 3 === 1 ? 'Instagram' : 'YouTube',
+    filter: i % 2 === 0 ? 'nano-fitness' : 'diet-2603',
     gender: i % 2 === 0 ? 'MALE' : 'FEMALE',
-    language: i % 3 === 0 ? '中文' : '英文',
-    location: i % 4 === 0 ? '上海' : '北京',
-    source: i % 2 === 0 ? '小红书' : '抖音',
-    accountLink: `https://example.com/kol${i + 1}`,
-    creatorId: `creator${i + 1}`,
+    tag: ['lifestyle', 'fitness', 'health'][i % 3],
+    language: i % 2 === 0 ? 'English' : 'Chinese',
+    location: ['United States', 'United Kingdom', 'Canada', 'Australia'][i % 4],
+    slug: `kol-${Math.random().toString(36).substring(7)}`,
+    creatorId: Math.random().toString().slice(2, 18),
     metrics: {
-      followersK: Math.floor(Math.random() * 1000),
-      likesK: Math.floor(Math.random() * 500),
-      meanViewsK: Math.floor(Math.random() * 300),
-      medianViewsK: Math.floor(Math.random() * 280),
-      engagementRate: +(Math.random() * 10).toFixed(2),
-      averageViewsK: Math.floor(Math.random() * 400),
-      averageLikesK: Math.floor(Math.random() * 100),
-      averageCommentsK: Math.floor(Math.random() * 10)
+      followersK: Number((Math.random() * 1000).toFixed(1)),
+      likesK: Number((Math.random() * 800).toFixed(1)),
+      meanViewsK: Number((Math.random() * 500).toFixed(1)),
+      medianViewsK: Number((Math.random() * 400).toFixed(1)),
+      engagementRate: Number((Math.random() * 15).toFixed(2)),
+      averageViewsK: Number((Math.random() * 600).toFixed(1)),
+      averageLikesK: Number((Math.random() * 200).toFixed(1)),
+      averageCommentsK: Number((Math.random() * 20).toFixed(1))
     },
     operational: {
       sendStatus: i % 3 === 0 ? 'SENT' : i % 3 === 1 ? 'PENDING' : 'FAILED',
+      sendDate: new Date(Date.now() - Math.floor(Math.random() * 10000000000)),
+      exportDate: new Date(Date.now() - Math.floor(Math.random() * 10000000000)),
       level: i % 5 === 0 ? 'MEGA' : i % 5 === 1 ? 'MACRO' : i % 5 === 2 ? 'MID' : i % 5 === 3 ? 'MICRO' : 'NANO',
-      keywordsAI: ['时尚', '美妆', '生活方式'],
-      mostUsedHashtags: ['#时尚', '#美妆', '#生活']
+      keywordsAI: ['Coach', 'Champion', 'Fitness'][i % 3].split(','),
+      mostUsedHashtags: ['#mentalhealth', '#selfcare', '#lifestyle'][i % 3].split(',')
     },
     collaborations: []
   }));
@@ -44,22 +51,37 @@ const mockKOLs = generateMockData(20000);
 interface Column {
   key: string;
   title: string;
+  tooltip?: string;
 }
 
 const columns: Column[] = [
-  { key: 'name', title: '姓名' },
-  { key: 'email', title: '邮箱' },
-  { key: 'gender', title: '性别' },
-  { key: 'language', title: '语言' },
-  { key: 'location', title: '地区' },
-  { key: 'source', title: '平台来源' },
-  { key: 'followersK', title: '粉丝数(K)' },
-  { key: 'likesK', title: '获赞数(K)' },
-  { key: 'engagementRate', title: '互动率' },
-  { key: 'level', title: 'KOL等级' },
-  { key: 'sendStatus', title: '发送状态' },
-  { key: 'keywordsAI', title: 'AI关键词' },
-  { key: 'mostUsedHashtags', title: '常用标签' }
+  { key: 'kolId', title: 'KOL ID', tooltip: 'KOL唯一标识' },
+  { key: 'email', title: 'Email', tooltip: '邮箱地址' },
+  { key: 'sendStatus', title: 'Send Status', tooltip: '发送状态' },
+  { key: 'sendDate', title: 'Send Date', tooltip: '发送日期' },
+  { key: 'name', title: 'KOL Name', tooltip: 'KOL名称' },
+  { key: 'bio', title: 'Bio', tooltip: '个人简介' },
+  { key: 'exportDate', title: 'Export Date', tooltip: '导出日期' },
+  { key: 'accountLink', title: 'Account Link', tooltip: '账号链接' },
+  { key: 'source', title: 'Source', tooltip: '平台来源' },
+  { key: 'filter', title: 'Filter', tooltip: '筛选标签' },
+  { key: 'gender', title: 'Gender', tooltip: '性别' },
+  { key: 'tag', title: 'Tag', tooltip: '标签' },
+  { key: 'language', title: 'Language', tooltip: '语言' },
+  { key: 'location', title: 'Location', tooltip: '地区' },
+  { key: 'followersK', title: 'Followers(K)', tooltip: '粉丝数(K)' },
+  { key: 'likesK', title: 'Likes(K)', tooltip: '获赞数(K)' },
+  { key: 'meanViewsK', title: 'Mean Views(K)', tooltip: '平均观看数(K)' },
+  { key: 'medianViewsK', title: 'Median Views(K)', tooltip: '中位观看数(K)' },
+  { key: 'keywordsAI', title: 'Keywords-AI', tooltip: 'AI关键词' },
+  { key: 'level', title: 'Level', tooltip: 'KOL等级' },
+  { key: 'engagementRate', title: 'Engagement Rate(%)', tooltip: '互动率(%)' },
+  { key: 'averageViewsK', title: 'Average Views(K)', tooltip: '平均观看数(K)' },
+  { key: 'averageLikesK', title: 'Average Likes(K)', tooltip: '平均点赞数(K)' },
+  { key: 'averageCommentsK', title: 'Average Comments(K)', tooltip: '平均评论数(K)' },
+  { key: 'mostUsedHashtags', title: 'Most Used Hashtags', tooltip: '常用标签' },
+  { key: 'slug', title: 'Slug', tooltip: '短链接' },
+  { key: 'creatorId', title: 'Creator ID', tooltip: '创作者ID' }
 ];
 
 export default function KOLManagement() {
@@ -127,8 +149,8 @@ export default function KOLManagement() {
 
   return (
     <PageLayout
-      title="KOL 管理"
-      description="管理和监控您的KOL资源"
+      title="KOL Management"
+      description="Manage and monitor your KOL resources"
     >
       <div className="flex justify-end space-x-4 mb-6">
         <TableFilter
@@ -160,6 +182,7 @@ export default function KOLManagement() {
                     key={column.key}
                     className={`px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200
                       ${column.key === 'name' ? 'sticky left-0 bg-gray-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] z-10' : ''}`}
+                    title={column.tooltip}
                   >
                     {column.title}
                   </th>
@@ -187,10 +210,15 @@ export default function KOLManagement() {
                       }`}
                     >
                       {column.key === 'name' ? (
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center">
                           <span>{kol.name}</span>
+                        </div>
+                      ) : column.key === 'kolId' ? (
+                        <div className="flex items-center justify-between">
+                          <span>{kol.kolId}</span>
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setSelectedKOL(kol);
                               setIsModalOpen(true);
                             }}

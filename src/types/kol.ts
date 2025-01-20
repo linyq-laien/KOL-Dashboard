@@ -1,8 +1,8 @@
 export type Gender = 'MALE' | 'FEMALE';
 
-export type SendStatus = 'PENDING' | 'SENT' | 'FAILED';
+export type SendStatus = 'SENT' | 'PENDING' | 'FAILED';
 
-export type KOLLevel = 'NANO' | 'MICRO' | 'MID' | 'MACRO' | 'MEGA';
+export type KOLLevel = 'MEGA' | 'MACRO' | 'MID' | 'MICRO' | 'NANO';
 
 export type CollaborationType = 'LIVESTREAM' | 'SHORT_VIDEO' | 'POST';
 
@@ -32,31 +32,37 @@ export interface KOLMetrics {
 }
 
 export interface KOLOperationalData {
+  level: KOLLevel;
   sendStatus: SendStatus;
   sendDate?: Date;
   exportDate?: Date;
-  level: KOLLevel;
   keywordsAI?: string[];
   mostUsedHashtags?: string[];
 }
 
 export interface CollaborationRecord {
   id: string;
-  brand: string;
-  type: CollaborationType;
   date: Date;
-  cost: number;
-  performance: {
-    views?: number;
-    likes?: number;
-    comments?: number;
-    shares?: number;
-    roi?: number;
-  };
+  type: string;
+  status: string;
   notes?: string;
 }
 
-export interface KOL extends KOLBasicInfo {
+export interface KOL {
+  id: string;
+  kolId: string;
+  name: string;
+  email: string;
+  gender: Gender;
+  bio: string;
+  language: string;
+  location: string;
+  source: string;
+  filter: string;
+  tag: string;
+  accountLink: string;
+  slug: string;
+  creatorId: string;
   metrics: KOLMetrics;
   operational: KOLOperationalData;
   collaborations: CollaborationRecord[];
