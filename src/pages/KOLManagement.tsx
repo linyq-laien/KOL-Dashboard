@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Download } from 'lucide-react';
+import { Plus, Download, Eye } from 'lucide-react';
 import type { KOL, KOLMetrics, KOLOperationalData } from '../types/kol';
 import TableColumnSelector from '../components/TableColumnSelector';
 import TableFilter from '../components/TableFilter';
 import { useSidebar } from '../contexts/SidebarContext';
 import PageLayout from '../components/PageLayout';
+import KOLDetailModal from '../components/KOLDetailModal';
 
 // 模拟数据生成函数
 function generateMockData(count: number): KOL[] {
@@ -67,6 +68,8 @@ export default function KOLManagement() {
   const [pageSize, setPageSize] = useState(10);
   const [visibleColumns, setVisibleColumns] = useState(columns.map(col => col.key));
   const [filters, setFilters] = useState<any[]>([]);
+  const [selectedKOL, setSelectedKOL] = useState<KOL | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleColumnToggle = (columnKey: string) => {
     if (visibleColumns.includes(columnKey)) {
@@ -111,6 +114,16 @@ export default function KOLManagement() {
   }, [filteredData, currentPage, pageSize]);
 
   const totalPages = Math.ceil(filteredData.length / pageSize);
+
+  const handleSave = (updatedKol: KOL) => {
+    // 在实际应用中,这里应该调用API更新数据
+    console.log('Saving updated KOL:', updatedKol);
+  };
+
+  const handleDelete = (id: string) => {
+    // 在实际应用中,这里应该调用API删除数据
+    console.log('Deleting KOL:', id);
+  };
 
   return (
     <PageLayout
@@ -173,7 +186,20 @@ export default function KOLManagement() {
                           : column.key === 'name' ? 'bg-gray-50' : ''
                       }`}
                     >
-                      {column.key === 'keywordsAI' || column.key === 'mostUsedHashtags' ? (
+                      {column.key === 'name' ? (
+                        <div className="flex items-center justify-between">
+                          <span>{kol.name}</span>
+                          <button
+                            onClick={() => {
+                              setSelectedKOL(kol);
+                              setIsModalOpen(true);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        </div>
+                      ) : column.key === 'keywordsAI' || column.key === 'mostUsedHashtags' ? (
                         <div className="flex flex-wrap gap-1.5">
                           {kol.operational[column.key]?.map((tag: string, index: number) => (
                             <span
@@ -280,6 +306,17 @@ export default function KOLManagement() {
           </div>
         </div>
       </div>
+
+      <KOLDetailModal
+        kol={selectedKOL}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedKOL(null);
+        }}
+        onSave={handleSave}
+        onDelete={handleDelete}
+      />
     </PageLayout>
   );
 }
