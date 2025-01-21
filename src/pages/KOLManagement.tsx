@@ -140,6 +140,30 @@ const columns: Column[] = [
   { key: 'creatorId', title: 'Creator ID', tooltip: '创作者ID' }
 ];
 
+// 渲染标签列表的函数
+const renderTags = (tags: string[] = [], total: number) => {
+  const displayTags = tags.slice(0, 2);
+  const remaining = total - displayTags.length;
+
+  return (
+    <div className="flex items-center space-x-1.5 overflow-hidden">
+      {displayTags.map((tag: string, index: number) => (
+        <span
+          key={index}
+          className="px-2.5 py-1 text-xs bg-gray-100 rounded-full whitespace-nowrap"
+        >
+          {tag}
+        </span>
+      ))}
+      {remaining > 0 && (
+        <span className="text-xs text-gray-500 whitespace-nowrap">
+          +{remaining} more...
+        </span>
+      )}
+    </div>
+  );
+};
+
 export default function KOLManagement() {
   const { isCollapsed } = useSidebar();
   const [currentPage, setCurrentPage] = useState(1);
@@ -335,15 +359,11 @@ export default function KOLManagement() {
                           </button>
                         </div>
                       ) : column.key === 'keywordsAI' || column.key === 'mostUsedHashtags' ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {kol.operational[column.key]?.map((tag: string, index: number) => (
-                            <span
-                              key={index}
-                              className="px-2.5 py-1 text-xs bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
-                            >
-                              {tag}
-                            </span>
-                          ))}
+                        <div className="max-w-md truncate">
+                          {renderTags(
+                            kol.operational[column.key],
+                            kol.operational[column.key]?.length || 0
+                          )}
                         </div>
                       ) : column.key === 'level' ? (
                         <span className="px-2.5 py-1 text-xs leading-4 font-semibold rounded-full bg-green-100 text-green-800 hover:bg-green-200 transition-colors">
