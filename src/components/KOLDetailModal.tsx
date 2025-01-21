@@ -2,52 +2,168 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, User, Mail, Globe, MapPin, Link, Filter, Tag, Users, Heart, Eye, BarChart2, TrendingUp, Calendar, Send } from 'lucide-react';
 import type { KOL } from '../types/kol';
 import { useTimeZone, getTimeZoneOffset } from '../contexts/TimeZoneContext';
+import { toast } from 'react-hot-toast';
 
 interface KOLDetailModalProps {
   kol: KOL | null;
   isOpen: boolean;
   onClose: () => void;
   onSave: (updatedKol: KOL) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
+  mode?: 'edit' | 'create';
 }
+
+// 添加验证函数
+const validateEmail = (email: string) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const validateUrl = (url: string) => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const validateNumber = (value: number, min: number, max: number) => {
+  return value >= min && value <= max;
+};
+
+const genderOptions = ['MALE', 'FEMALE', 'LGBT'];
+const languageOptions = ['English', 'Chinese'];
+const levelOptions = ['Mid 50k-500k', 'Micro 10k-50k', 'Nano 1-10k'];
+const sourceOptions = ['Collabstr', 'Manual', 'Creable', 'Heepsy'];
 
 export default function KOLDetailModal({
   kol,
   isOpen,
   onClose,
   onSave,
-  onDelete
+  onDelete,
+  mode = 'edit'
 }: KOLDetailModalProps) {
   const [editedKol, setEditedKol] = useState<KOL | null>(null);
   const [activeTab, setActiveTab] = useState('basic'); // basic, metrics, operational
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const { timeZone } = useTimeZone();
 
   useEffect(() => {
     setEditedKol(kol);
+    // 重置字段错误
+    setFieldErrors({});
   }, [kol]);
 
   if (!isOpen || !kol) return null;
 
-  const handleSave = async () => {
-    if (editedKol) {
-      setIsLoading(true);
-      try {
-        await onSave(editedKol);
-        onClose();
-      } catch (error) {
-        console.error('Error saving KOL:', error);
-      } finally {
-        setIsLoading(false);
-      }
+  // 修改验证函数
+  const validateField = (field: string, value: any) => {
+    const errors: Record<string, string> = {};
+    
+    switch (field) {
+      case 'email':
+        if (value && !validateEmail(value)) {
+          errors.email = '请输入正确的邮箱格式';
+        }
+        break;
+      case 'gender':
+        if (value && !genderOptions.includes(value)) {
+          errors.gender = `性别必须是以下选项之一: ${genderOptions.join(', ')}`;
+        }
+        break;
+      case 'language':
+        if (value && !languageOptions.includes(value)) {
+          errors.language = `语言必须是以下选项之一: ${languageOptions.join(', ')}`;
+        }
+        break;
+      case 'level':
+        if (value && !levelOptions.includes(value)) {
+          errors.level = `等级必须是以下选项之一: ${levelOptions.join(', ')}`;
+        }
+        break;
+      case 'source':
+        if (value && !sourceOptions.includes(value)) {
+          errors.source = `来源必须是以下选项之一: ${sourceOptions.join(', ')}`;
+        }
+        break;
+      case 'accountLink':
+        if (value && !validateUrl(value)) {
+          errors.accountLink = '请输入正确的URL格式';
+        }
+        break;
+      case 'followersK':
+      case 'likesK':
+      case 'meanViewsK':
+      case 'medianViewsK':
+        if (value && !validateNumber(Number(value), 0, 1000000)) {
+          errors[field] = '数值必须在 0-1000000 之间';
+        }
+        break;
+      case 'engagementRate':
+        if (value && !validateNumber(Number(value), 0, 100)) {
+          errors.engagementRate = '互动率必须在 0-100% 之间';
+        }
+        break;
     }
+
+    // 更新验证错误状态
+    setValidationErrors(prev => {
+      const newErrors = { ...prev };
+      if (Object.keys(errors).length > 0) {
+        newErrors[field] = errors[field];
+      } else {
+        delete newErrors[field];
+      }
+      return newErrors;
+    });
+    
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleFieldChange = (field: string, value: any, section?: string) => {
+    validateField(field, value);
+    
+    if (section === 'metrics') {
+      setEditedKol(prev => prev ? {
+        ...prev,
+        metrics: {...prev.metrics, [field]: value}
+      } : null);
+    } else if (section === 'operational') {
+      setEditedKol(prev => prev ? {
+        ...prev,
+        operational: {...prev.operational, [field]: value}
+      } : null);
+    } else {
+      setEditedKol(prev => prev ? {...prev, [field]: value} : null);
+    }
+  };
+
+  const handleSave = () => {
+    if (!editedKol) return;
+
+    // 确保 accountLink 是字符串类型
+    const processedKol = {
+      ...editedKol,
+      accountLink: editedKol.accountLink ? editedKol.accountLink.toString() : '',
+    };
+
+    if (mode === 'create') {
+      onSave(processedKol);
+    } else {
+      onSave(processedKol);
+    }
+    onClose();
   };
 
   const handleDelete = async () => {
     setIsLoading(true);
     try {
-      await onDelete(kol.id);
+      await onDelete?.(kol.id);
       onClose();
     } catch (error) {
       console.error('Error deleting KOL:', error);
@@ -125,19 +241,25 @@ export default function KOLDetailModal({
               <User size={24} />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">KOL Details / KOL详情</h2>
-              <p className="text-sm text-gray-500 mt-0.5">View and edit KOL information / 查看和编辑KOL信息</p>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {mode === 'create' ? 'Add New KOL / 添加KOL' : 'KOL Details / KOL详情'}
+              </h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {mode === 'create' ? 'Create a new KOL / 创建新的KOL' : 'View and edit KOL information / 查看和编辑KOL信息'}
+              </p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="px-4 py-2 bg-red-50 text-red-600 rounded-lg flex items-center space-x-2 hover:bg-red-100 transition-colors"
-              disabled={isLoading}
-            >
-              <Trash2 size={18} />
-              <span>删除</span>
-            </button>
+            {mode === 'edit' && onDelete && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="px-4 py-2 bg-red-50 text-red-600 rounded-lg flex items-center space-x-2 hover:bg-red-100 transition-colors"
+                disabled={isLoading}
+              >
+                <Trash2 size={18} />
+                <span>删除</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -155,7 +277,7 @@ export default function KOLDetailModal({
               ) : (
                 <Save size={18} />
               )}
-              <span>保存</span>
+              <span>{mode === 'create' ? '创建' : '保存'}</span>
             </button>
           </div>
         </div>
@@ -200,8 +322,11 @@ export default function KOLDetailModal({
                     <input
                       type="text"
                       value={editedKol?.kolId || ''}
-                      readOnly
-                      className="w-full px-2 rounded-lg border-gray-300 bg-gray-50 cursor-not-allowed text-gray-500"
+                      readOnly={mode === 'edit'}
+                      onChange={(e) => mode === 'create' && setEditedKol(prev => prev ? {...prev, kolId: e.target.value} : null)}
+                      className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        mode === 'edit' ? 'bg-gray-50 cursor-not-allowed text-gray-500' : ''
+                      }`}
                     />
                   </div>
                   <div>
@@ -214,9 +339,17 @@ export default function KOLDetailModal({
                     <input
                       type="email"
                       value={editedKol?.email || ''}
-                      onChange={(e) => setEditedKol(prev => prev ? {...prev, email: e.target.value} : null)}
-                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) => handleFieldChange('email', e.target.value)}
+                      className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        (fieldErrors['email'] || validationErrors['email']) ? 'border-red-500' : ''
+                      }`}
+                      placeholder="请输入邮箱地址"
                     />
+                    {(fieldErrors['email'] || validationErrors['email']) && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {fieldErrors['email'] || validationErrors['email']}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -259,12 +392,23 @@ export default function KOLDetailModal({
                     </label>
                     <select
                       value={editedKol?.gender || ''}
-                      onChange={(e) => setEditedKol(prev => prev ? {...prev, gender: e.target.value as 'MALE' | 'FEMALE'} : null)}
-                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) => handleFieldChange('gender', e.target.value)}
+                      className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        (fieldErrors['gender'] || validationErrors['gender']) ? 'border-red-500' : ''
+                      }`}
                     >
-                      <option value="MALE">Male / 男</option>
-                      <option value="FEMALE">Female / 女</option>
+                      <option value="">请选择性别</option>
+                      {genderOptions.map(option => (
+                        <option key={option} value={option}>
+                          {option === 'MALE' ? '男' : option === 'FEMALE' ? '女' : 'LGBT'}
+                        </option>
+                      ))}
                     </select>
+                    {(fieldErrors['gender'] || validationErrors['gender']) && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {fieldErrors['gender'] || validationErrors['gender']}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -311,12 +455,23 @@ export default function KOLDetailModal({
                         <span>Source</span>
                       </div>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={editedKol?.source || ''}
-                      onChange={(e) => setEditedKol(prev => prev ? {...prev, source: e.target.value} : null)}
-                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                      onChange={(e) => handleFieldChange('source', e.target.value)}
+                      className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        (fieldErrors['source'] || validationErrors['source']) ? 'border-red-500' : ''
+                      }`}
+                    >
+                      <option value="">请选择来源平台</option>
+                      {sourceOptions.map(option => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                    {(fieldErrors['source'] || validationErrors['source']) && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {fieldErrors['source'] || validationErrors['source']}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -328,9 +483,17 @@ export default function KOLDetailModal({
                     <input
                       type="url"
                       value={editedKol?.accountLink || ''}
-                      onChange={(e) => setEditedKol(prev => prev ? {...prev, accountLink: e.target.value} : null)}
-                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) => handleFieldChange('accountLink', e.target.value)}
+                      className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        (fieldErrors['accountLink'] || validationErrors['accountLink']) ? 'border-red-500' : ''
+                      }`}
+                      placeholder="请输入账号链接 (https://...)"
                     />
+                    {(fieldErrors['accountLink'] || validationErrors['accountLink']) && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {fieldErrors['accountLink'] || validationErrors['accountLink']}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -369,13 +532,20 @@ export default function KOLDetailModal({
                       <input
                         type="number"
                         value={editedKol?.metrics.followersK || 0}
-                        onChange={(e) => setEditedKol(prev => prev ? {
-                          ...prev,
-                          metrics: {...prev.metrics, followersK: Number(e.target.value)}
-                        } : null)}
-                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        onChange={(e) => handleFieldChange('followersK', Number(e.target.value), 'metrics')}
+                        className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          (fieldErrors['followersK'] || validationErrors['followersK']) ? 'border-red-500' : ''
+                        }`}
+                        min="0"
+                        max="1000000"
+                        step="0.1"
                       />
                       <p className="text-xs text-blue-600 mt-1">Thousand (K)</p>
+                      {(fieldErrors['followersK'] || validationErrors['followersK']) && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {fieldErrors['followersK'] || validationErrors['followersK']}
+                        </p>
+                      )}
                     </div>
                     <div className="bg-pink-50 rounded-xl p-4">
                       <div className="flex items-center space-x-2 text-pink-600 mb-1">
@@ -385,13 +555,20 @@ export default function KOLDetailModal({
                       <input
                         type="number"
                         value={editedKol?.metrics.likesK || 0}
-                        onChange={(e) => setEditedKol(prev => prev ? {
-                          ...prev,
-                          metrics: {...prev.metrics, likesK: Number(e.target.value)}
-                        } : null)}
-                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        onChange={(e) => handleFieldChange('likesK', Number(e.target.value), 'metrics')}
+                        className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-transparent ${
+                          (fieldErrors['likesK'] || validationErrors['likesK']) ? 'border-red-500' : ''
+                        }`}
+                        min="0"
+                        max="1000000"
+                        step="0.1"
                       />
                       <p className="text-xs text-pink-600 mt-1">Thousand (K)</p>
+                      {(fieldErrors['likesK'] || validationErrors['likesK']) && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {fieldErrors['likesK'] || validationErrors['likesK']}
+                        </p>
+                      )}
                     </div>
                     <div className="bg-purple-50 rounded-xl p-4">
                       <div className="flex items-center space-x-2 text-purple-600 mb-1">
@@ -401,13 +578,20 @@ export default function KOLDetailModal({
                       <input
                         type="number"
                         value={editedKol?.metrics.meanViewsK || 0}
-                        onChange={(e) => setEditedKol(prev => prev ? {
-                          ...prev,
-                          metrics: {...prev.metrics, meanViewsK: Number(e.target.value)}
-                        } : null)}
-                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        onChange={(e) => handleFieldChange('meanViewsK', Number(e.target.value), 'metrics')}
+                        className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                          (fieldErrors['meanViewsK'] || validationErrors['meanViewsK']) ? 'border-red-500' : ''
+                        }`}
+                        min="0"
+                        max="1000000"
+                        step="0.1"
                       />
                       <p className="text-xs text-purple-600 mt-1">Thousand (K)</p>
+                      {(fieldErrors['meanViewsK'] || validationErrors['meanViewsK']) && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {fieldErrors['meanViewsK'] || validationErrors['meanViewsK']}
+                        </p>
+                      )}
                     </div>
                     <div className="bg-green-50 rounded-xl p-4">
                       <div className="flex items-center space-x-2 text-green-600 mb-1">
@@ -418,13 +602,19 @@ export default function KOLDetailModal({
                         type="number"
                         step="0.01"
                         value={editedKol?.metrics.engagementRate || 0}
-                        onChange={(e) => setEditedKol(prev => prev ? {
-                          ...prev,
-                          metrics: {...prev.metrics, engagementRate: Number(e.target.value)}
-                        } : null)}
-                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        onChange={(e) => handleFieldChange('engagementRate', Number(e.target.value), 'metrics')}
+                        className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                          (fieldErrors['engagementRate'] || validationErrors['engagementRate']) ? 'border-red-500' : ''
+                        }`}
+                        min="0"
+                        max="100"
                       />
                       <p className="text-xs text-green-600 mt-1">Percentage (%)</p>
+                      {(fieldErrors['engagementRate'] || validationErrors['engagementRate']) && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {fieldErrors['engagementRate'] || validationErrors['engagementRate']}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -440,48 +630,76 @@ export default function KOLDetailModal({
                       <input
                         type="number"
                         value={editedKol?.metrics.medianViewsK || 0}
-                        onChange={(e) => setEditedKol(prev => prev ? {
-                          ...prev,
-                          metrics: {...prev.metrics, medianViewsK: Number(e.target.value)}
-                        } : null)}
-                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        onChange={(e) => handleFieldChange('medianViewsK', Number(e.target.value), 'metrics')}
+                        className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          (fieldErrors['medianViewsK'] || validationErrors['medianViewsK']) ? 'border-red-500' : ''
+                        }`}
+                        min="0"
+                        max="1000000"
+                        step="0.1"
                       />
+                      {(fieldErrors['medianViewsK'] || validationErrors['medianViewsK']) && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {fieldErrors['medianViewsK'] || validationErrors['medianViewsK']}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Average Views (K)</label>
                       <input
                         type="number"
                         value={editedKol?.metrics.averageViewsK || 0}
-                        onChange={(e) => setEditedKol(prev => prev ? {
-                          ...prev,
-                          metrics: {...prev.metrics, averageViewsK: Number(e.target.value)}
-                        } : null)}
-                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        onChange={(e) => handleFieldChange('averageViewsK', Number(e.target.value), 'metrics')}
+                        className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          (fieldErrors['averageViewsK'] || validationErrors['averageViewsK']) ? 'border-red-500' : ''
+                        }`}
+                        min="0"
+                        max="1000000"
+                        step="0.1"
                       />
+                      {(fieldErrors['averageViewsK'] || validationErrors['averageViewsK']) && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {fieldErrors['averageViewsK'] || validationErrors['averageViewsK']}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Average Likes (K)</label>
                       <input
                         type="number"
                         value={editedKol?.metrics.averageLikesK || 0}
-                        onChange={(e) => setEditedKol(prev => prev ? {
-                          ...prev,
-                          metrics: {...prev.metrics, averageLikesK: Number(e.target.value)}
-                        } : null)}
-                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        onChange={(e) => handleFieldChange('averageLikesK', Number(e.target.value), 'metrics')}
+                        className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          (fieldErrors['averageLikesK'] || validationErrors['averageLikesK']) ? 'border-red-500' : ''
+                        }`}
+                        min="0"
+                        max="1000000"
+                        step="0.1"
                       />
+                      {(fieldErrors['averageLikesK'] || validationErrors['averageLikesK']) && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {fieldErrors['averageLikesK'] || validationErrors['averageLikesK']}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Average Comments (K)</label>
                       <input
                         type="number"
                         value={editedKol?.metrics.averageCommentsK || 0}
-                        onChange={(e) => setEditedKol(prev => prev ? {
-                          ...prev,
-                          metrics: {...prev.metrics, averageCommentsK: Number(e.target.value)}
-                        } : null)}
-                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        onChange={(e) => handleFieldChange('averageCommentsK', Number(e.target.value), 'metrics')}
+                        className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          (fieldErrors['averageCommentsK'] || validationErrors['averageCommentsK']) ? 'border-red-500' : ''
+                        }`}
+                        min="0"
+                        max="1000000"
+                        step="0.1"
                       />
+                      {(fieldErrors['averageCommentsK'] || validationErrors['averageCommentsK']) && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {fieldErrors['averageCommentsK'] || validationErrors['averageCommentsK']}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -507,16 +725,23 @@ export default function KOLDetailModal({
                     </label>
                     <select
                       value={editedKol?.operational.level || ''}
-                      onChange={(e) => setEditedKol(prev => prev ? {
-                        ...prev,
-                        operational: {...prev.operational, level: e.target.value as any}
-                      } : null)}
-                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) => handleFieldChange('level', e.target.value as any, 'operational')}
+                      className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        (fieldErrors['level'] || validationErrors['level']) ? 'border-red-500' : ''
+                      }`}
                     >
-                      <option value="Mid 50k-500k">Mid (50k-500k)</option>
-                      <option value="Micro 10k-50k">Micro (10k-50k)</option>
-                      <option value="Nano 1-10k">Nano (1-10k)</option>
+                      <option value="">请选择等级</option>
+                      {levelOptions.map(option => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
                     </select>
+                    {(fieldErrors['level'] || validationErrors['level']) && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {fieldErrors['level'] || validationErrors['level']}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -527,11 +752,10 @@ export default function KOLDetailModal({
                     </label>
                     <select
                       value={editedKol?.operational.sendStatus || ''}
-                      onChange={(e) => setEditedKol(prev => prev ? {
-                        ...prev,
-                        operational: {...prev.operational, sendStatus: e.target.value as any}
-                      } : null)}
-                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(e) => handleFieldChange('sendStatus', e.target.value as any, 'operational')}
+                      className={`w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        (fieldErrors['sendStatus'] || validationErrors['sendStatus']) ? 'border-red-500' : ''
+                      }`}
                     >
                       {Array.from({ length: 20 }, (_, i) => i + 1).map(num => (
                         <option key={num} value={`Round No.${num}`}>Round No.{num}</option>
@@ -549,13 +773,7 @@ export default function KOLDetailModal({
                       type="datetime-local"
                       value={formatDateToLocal(editedKol?.operational.sendDate)}
                       onChange={(e) => {
-                        setEditedKol(prev => prev ? {
-                          ...prev,
-                          operational: {
-                            ...prev.operational,
-                            sendDate: e.target.value ? parseLocalToUTC(e.target.value) : undefined
-                          }
-                        } : null);
+                        handleFieldChange('sendDate', e.target.value ? parseLocalToUTC(e.target.value) : undefined, 'operational');
                       }}
                       className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -571,13 +789,7 @@ export default function KOLDetailModal({
                       type="datetime-local"
                       value={formatDateToLocal(editedKol?.operational.exportDate)}
                       onChange={(e) => {
-                        setEditedKol(prev => prev ? {
-                          ...prev,
-                          operational: {
-                            ...prev.operational,
-                            exportDate: e.target.value ? parseLocalToUTC(e.target.value) : undefined
-                          }
-                        } : null);
+                        handleFieldChange('exportDate', e.target.value ? parseLocalToUTC(e.target.value) : undefined, 'operational');
                       }}
                       className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />

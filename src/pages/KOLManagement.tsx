@@ -100,7 +100,8 @@ const fetchKOLs = async (
         level: item.level,
         keywordsAI: item.keywords_ai || [],
         mostUsedHashtags: item.most_used_hashtags || []
-      }
+      },
+      collaborations: item.collaborations || []
     }))
   };
 };
@@ -177,6 +178,7 @@ export default function KOLManagement() {
   }>>([]);
   const [selectedKOL, setSelectedKOL] = useState<KOL | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // 使用 React Query 获取数据
@@ -219,7 +221,8 @@ export default function KOLManagement() {
           : null,
         level: updatedKol.operational.level || null,
         keywords_ai: Array.isArray(updatedKol.operational.keywordsAI) ? updatedKol.operational.keywordsAI : [],
-        most_used_hashtags: Array.isArray(updatedKol.operational.mostUsedHashtags) ? updatedKol.operational.mostUsedHashtags : []
+        most_used_hashtags: Array.isArray(updatedKol.operational.mostUsedHashtags) ? updatedKol.operational.mostUsedHashtags : [],
+        collaborations: updatedKol.collaborations || []
       };
 
       const response = await fetch(`/api/kols/${updatedKol.kolId}`, {
@@ -270,6 +273,102 @@ export default function KOLManagement() {
     }
   });
 
+  // 创建 KOL 的 mutation
+  const createKolMutation = useMutation({
+    mutationFn: async (newKol: Omit<KOL, 'id'>) => {
+      // 准备请求数据，确保类型正确
+      const requestData = {
+        kol_id: newKol.kolId,
+        name: newKol.name || null,
+        email: newKol.email || null,
+        bio: newKol.bio || null,
+        // 确保 account_link 是字符串类型
+        account_link: newKol.accountLink ? `${newKol.accountLink}` : null,
+        source: newKol.source || null,
+        filter: newKol.filter || null,
+        gender: newKol.gender || null,
+        tag: newKol.tag || null,
+        language: newKol.language || null,
+        location: newKol.location || null,
+        slug: newKol.slug || null,
+        creator_id: newKol.creatorId || null,
+        followers_k: newKol.metrics.followersK || null,
+        likes_k: newKol.metrics.likesK || null,
+        mean_views_k: newKol.metrics.meanViewsK || null,
+        median_views_k: newKol.metrics.medianViewsK || null,
+        engagement_rate: newKol.metrics.engagementRate || null,
+        average_views_k: newKol.metrics.averageViewsK || null,
+        average_likes_k: newKol.metrics.averageLikesK || null,
+        average_comments_k: newKol.metrics.averageCommentsK || null,
+        send_status: newKol.operational.sendStatus || null,
+        send_date: newKol.operational.sendDate instanceof Date 
+          ? newKol.operational.sendDate.toISOString().slice(0, 19).replace('T', ' ')
+          : null,
+        export_date: newKol.operational.exportDate instanceof Date 
+          ? newKol.operational.exportDate.toISOString().slice(0, 19).replace('T', ' ')
+          : null,
+        level: newKol.operational.level || null,
+        keywords_ai: Array.isArray(newKol.operational.keywordsAI) ? newKol.operational.keywordsAI : [],
+        most_used_hashtags: Array.isArray(newKol.operational.mostUsedHashtags) ? newKol.operational.mostUsedHashtags : [],
+        collaborations: newKol.collaborations || []
+      };
+
+      console.log('Creating KOL with data:', requestData);  // 添加日志
+
+      const response = await fetch('/api/kols', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // 解析错误信息
+        if (response.status === 422) {
+          const errorDetails = data.detail || [];
+          const formattedErrors = errorDetails.map((error: any) => {
+            const field = error.loc[1];
+            const msg = error.msg;
+            console.error(`Validation error for field ${field}:`, msg);  // 添加字段级别的错误日志
+            return `${field}: ${msg}`;
+          }).join('\n');
+          throw new Error(`数据验证错误:\n${formattedErrors}`);
+        } else if (response.status === 500) {
+          console.error('Server error:', data);  // 添加服务器错误日志
+          if (data.detail?.includes('duplicate')) {
+            throw new Error('邮箱已存在，请使用其他邮箱地址');
+          } else {
+            throw new Error(data.detail || '服务器错误，请稍后重试');
+          }
+        } else {
+          console.error('Unknown error:', data);  // 添加未知错误日志
+          throw new Error(data.detail || '创建失败，请检查输入数据');
+        }
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kols'] });
+      toast.success('KOL 创建成功');
+      setIsCreateModalOpen(false);
+    },
+    onError: (error: Error) => {
+      console.error('Error creating KOL:', error);
+      // 使用 toast 显示格式化的错误信息
+      toast.error(error.message, {
+        duration: 5000,  // 延长显示时间
+        style: {
+          maxWidth: '500px',  // 增加宽度以显示更多内容
+          whiteSpace: 'pre-line'  // 保留换行符
+        }
+      });
+    }
+  });
+
   const handleColumnToggle = (columnKey: string) => {
     if (visibleColumns.includes(columnKey)) {
       setVisibleColumns(visibleColumns.filter(key => key !== columnKey));
@@ -286,6 +385,11 @@ export default function KOLManagement() {
     if (window.confirm('确定要删除这个 KOL 吗？此操作不可恢复。')) {
       await deleteKolMutation.mutateAsync(id);
     }
+  };
+
+  const handleCreate = async (newKol: KOL) => {
+    const { id, ...kolData } = newKol;
+    await createKolMutation.mutateAsync(kolData);
   };
 
   // 加载状态
@@ -335,7 +439,10 @@ export default function KOLManagement() {
           <Download size={20} />
           <span>导出</span>
         </button>
-        <button className="px-4 py-2.5 bg-blue-600 text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors">
+        <button 
+          onClick={() => setIsCreateModalOpen(true)}
+          className="px-4 py-2.5 bg-blue-600 text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+        >
           <Plus size={20} />
           <span>添加 KOL</span>
         </button>
@@ -510,6 +617,49 @@ export default function KOLManagement() {
         }}
         onSave={handleSave}
         onDelete={handleDelete}
+        mode="edit"
+      />
+
+      <KOLDetailModal
+        kol={{
+          id: '',
+          kolId: '',
+          email: '',
+          name: '',
+          bio: '',
+          accountLink: '',
+          source: '',
+          filter: '',
+          gender: 'MALE',
+          tag: '',
+          language: 'Chinese',
+          location: '',
+          slug: '',
+          creatorId: '',
+          metrics: {
+            followersK: 0,
+            likesK: 0,
+            meanViewsK: 0,
+            medianViewsK: 0,
+            engagementRate: 0,
+            averageViewsK: 0,
+            averageLikesK: 0,
+            averageCommentsK: 0
+          },
+          operational: {
+            sendStatus: 'Round No.1',
+            sendDate: undefined,
+            exportDate: undefined,
+            level: 'Mid 50k-500k',
+            keywordsAI: [],
+            mostUsedHashtags: []
+          },
+          collaborations: []
+        }}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSave={handleCreate}
+        mode="create"
       />
     </PageLayout>
   );

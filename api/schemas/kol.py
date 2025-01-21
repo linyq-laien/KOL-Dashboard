@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr, Field, HttpUrl
+from pydantic import BaseModel, EmailStr, Field
 from ..models import Gender, Level, Platform, Source, SendStatus
 
 class KOLBase(BaseModel):
@@ -8,7 +8,7 @@ class KOLBase(BaseModel):
     email: Optional[EmailStr] = None
     name: Optional[str] = None
     bio: Optional[str] = None
-    account_link: Optional[HttpUrl] = None
+    account_link: Optional[str] = None
     platform: Optional[Platform] = None
     source: Optional[Source] = None
     filter: Optional[str] = None
