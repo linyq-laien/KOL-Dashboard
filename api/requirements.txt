@@ -1,0 +1,6 @@
+sqlalchemy>=2.0.37
+sqlalchemy-utils>=0.41.1
+psycopg2-binary>=2.9.9
+python-dotenv>=1.0.0
+alembic>=1.13.1
+typing-extensions>=4.9.0 
