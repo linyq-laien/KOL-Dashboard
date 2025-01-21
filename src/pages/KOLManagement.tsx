@@ -485,11 +485,11 @@ export default function KOLManagement() {
                     >
                       {column.key === 'name' ? (
                         <div className="flex items-center">
-                          <span>{kol.name}</span>
+                          <span>{kol.name || '-'}</span>
                         </div>
                       ) : column.key === 'kolId' ? (
                         <div className="flex items-center justify-between">
-                          <span>{kol.kolId}</span>
+                          <span>{kol.kolId || '-'}</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -503,21 +503,24 @@ export default function KOLManagement() {
                         </div>
                       ) : column.key === 'keywordsAI' || column.key === 'mostUsedHashtags' ? (
                         <div className="max-w-md truncate">
-                          {renderTags(
-                            kol.operational[column.key],
-                            kol.operational[column.key]?.length || 0
-                          )}
+                          {(kol.operational[column.key as keyof KOLOperationalData] as string[] | undefined)?.length > 0
+                            ? renderTags(
+                                kol.operational[column.key as keyof KOLOperationalData] as string[],
+                                (kol.operational[column.key as keyof KOLOperationalData] as string[])?.length || 0
+                              )
+                            : '-'
+                          }
                         </div>
                       ) : column.key === 'level' ? (
                         <span className="px-2.5 py-1 text-xs leading-4 font-semibold rounded-full bg-green-100 text-green-800 hover:bg-green-200 transition-colors">
-                          {kol.operational.level}
+                          {kol.operational.level || '-'}
                         </span>
                       ) : column.key === 'sendStatus' ? (
                         <span className={`px-2.5 py-1 text-xs leading-4 font-semibold rounded-full 
                           ${kol.operational.sendStatus ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'} 
                           transition-colors`}
                         >
-                          {kol.operational.sendStatus || '未发送'}
+                          {kol.operational.sendStatus || '-'}
                         </span>
                       ) : column.key === 'sendDate' || column.key === 'exportDate' ? (
                         <div className="text-gray-900">
@@ -525,17 +528,20 @@ export default function KOLManagement() {
                             ? (kol.operational[column.key as keyof KOLOperationalData] as Date).toLocaleString()
                             : '-'}
                         </div>
-                      ) : column.key === 'followersK' || column.key === 'likesK' ? (
+                      ) : column.key === 'followersK' || column.key === 'likesK' || 
+                         column.key === 'meanViewsK' || column.key === 'medianViewsK' ||
+                         column.key === 'averageViewsK' || column.key === 'averageLikesK' ||
+                         column.key === 'averageCommentsK' ? (
                         <div className="text-gray-900 font-medium">
-                          {kol.metrics[column.key as keyof KOLMetrics]}K
+                          {kol.metrics[column.key as keyof KOLMetrics] ? `${kol.metrics[column.key as keyof KOLMetrics]}K` : '-'}
                         </div>
                       ) : column.key === 'engagementRate' ? (
                         <div className="text-gray-900 font-medium">
-                          {kol.metrics.engagementRate}%
+                          {kol.metrics.engagementRate ? `${kol.metrics.engagementRate}%` : '-'}
                         </div>
                       ) : (
                         <div className="text-gray-900">
-                          {(kol as any)[column.key]}
+                          {(kol as any)[column.key] || '-'}
                         </div>
                       )}
                     </td>
