@@ -96,5 +96,5 @@ class KOL(Base):
     most_used_hashtags: Mapped[Optional[List[str]]] = mapped_column(ARRAY(String))
 
     # 时间信息
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)) 
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(), onupdate=lambda: datetime.now()) 

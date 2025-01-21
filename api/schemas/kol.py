@@ -39,7 +39,12 @@ class KOLCreate(KOLBase):
 
 class KOLUpdate(KOLBase):
     """更新KOL时的请求模型"""
-    pass
+    def model_dump(self, *args, **kwargs):
+        data = super().model_dump(*args, **kwargs)
+        # 将 HttpUrl 转换为字符串
+        if data.get('account_link'):
+            data['account_link'] = str(data['account_link'])
+        return data
 
 class KOLInDB(KOLBase):
     """数据库中的KOL模型"""

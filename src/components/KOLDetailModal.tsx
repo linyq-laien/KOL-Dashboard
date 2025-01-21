@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, User, Mail, Globe, MapPin, Link, Filter, Tag, Users, Heart, Eye, BarChart2, TrendingUp, Calendar, Send } from 'lucide-react';
 import type { KOL } from '../types/kol';
 
@@ -6,8 +6,8 @@ interface KOLDetailModalProps {
   kol: KOL | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (updatedKol: KOL) => void;
-  onDelete: (id: string) => void;
+  onSave: (updatedKol: KOL) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }
 
 export default function KOLDetailModal({
@@ -17,25 +17,42 @@ export default function KOLDetailModal({
   onSave,
   onDelete
 }: KOLDetailModalProps) {
-  const [editedKol, setEditedKol] = React.useState<KOL | null>(null);
-  const [activeTab, setActiveTab] = React.useState('basic'); // basic, metrics, operational
+  const [editedKol, setEditedKol] = useState<KOL | null>(null);
+  const [activeTab, setActiveTab] = useState('basic'); // basic, metrics, operational
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setEditedKol(kol);
   }, [kol]);
 
   if (!isOpen || !kol) return null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editedKol) {
-      onSave(editedKol);
-      onClose();
+      setIsLoading(true);
+      try {
+        await onSave(editedKol);
+        onClose();
+      } catch (error) {
+        console.error('Error saving KOL:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
-  const handleDelete = () => {
-    onDelete(kol.id);
-    onClose();
+  const handleDelete = async () => {
+    setIsLoading(true);
+    try {
+      await onDelete(kol.id);
+      onClose();
+    } catch (error) {
+      console.error('Error deleting KOL:', error);
+    } finally {
+      setIsLoading(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const tabs = [
@@ -46,6 +63,39 @@ export default function KOLDetailModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 z-60 flex items-center justify-center">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">确认删除</h3>
+            <p className="text-gray-600 mb-6">
+              您确定要删除这个 KOL 吗？此操作不可恢复。
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={isLoading}
+              >
+                取消
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Trash2 size={18} />
+                )}
+                <span>确认删除</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div 
         className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden animate-modal-enter"
         onClick={(e) => e.stopPropagation()}
@@ -63,8 +113,9 @@ export default function KOLDetailModal({
           </div>
           <div className="flex items-center space-x-3">
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               className="px-4 py-2 bg-red-50 text-red-600 rounded-lg flex items-center space-x-2 hover:bg-red-100 transition-colors"
+              disabled={isLoading}
             >
               <Trash2 size={18} />
               <span>删除</span>
@@ -72,14 +123,20 @@ export default function KOLDetailModal({
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={isLoading}
             >
               取消
             </button>
             <button
               onClick={handleSave}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
+              disabled={isLoading}
             >
-              <Save size={18} />
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Save size={18} />
+              )}
               <span>保存</span>
             </button>
           </div>
@@ -438,11 +495,9 @@ export default function KOLDetailModal({
                       } : null)}
                       className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="MEGA">Mega / 超级</option>
-                      <option value="MACRO">Macro / 大型</option>
-                      <option value="MID">Mid / 中型</option>
-                      <option value="MICRO">Micro / 小型</option>
-                      <option value="NANO">Nano / 微型</option>
+                      <option value="Mid 50k-500k">Mid (50k-500k)</option>
+                      <option value="Micro 10k-50k">Micro (10k-50k)</option>
+                      <option value="Nano 1-10k">Nano (1-10k)</option>
                     </select>
                   </div>
                   <div>
@@ -460,9 +515,9 @@ export default function KOLDetailModal({
                       } : null)}
                       className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="SENT">Sent / 已发送</option>
-                      <option value="PENDING">Pending / 待发送</option>
-                      <option value="FAILED">Failed / 发送失败</option>
+                      {Array.from({ length: 20 }, (_, i) => i + 1).map(num => (
+                        <option key={num} value={`Round No.${num}`}>Round No.{num}</option>
+                      ))}
                     </select>
                   </div>
                   <div>

@@ -6,7 +6,8 @@ import TableFilter from '../components/TableFilter';
 import { useSidebar } from '../contexts/SidebarContext';
 import PageLayout from '../components/PageLayout';
 import KOLDetailModal from '../components/KOLDetailModal';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 
 // API调用函数
 const fetchKOLs = async (
@@ -73,7 +74,7 @@ const fetchKOLs = async (
       email: item.email,
       name: item.name,
       bio: item.bio,
-      accountLink: item.account_link,
+      accountLink: item.account_link ? String(item.account_link) : null,
       source: item.source,
       filter: item.filter,
       gender: item.gender,
@@ -176,11 +177,91 @@ export default function KOLManagement() {
   }>>([]);
   const [selectedKOL, setSelectedKOL] = useState<KOL | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // 使用 React Query 获取数据
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['kols', currentPage, pageSize, filters],
     queryFn: () => fetchKOLs(currentPage, pageSize, filters)
+  });
+
+  // 更新 KOL 的 mutation
+  const updateKolMutation = useMutation({
+    mutationFn: async (updatedKol: KOL) => {
+      // 准备更新数据，确保类型正确
+      const updateData = {
+        name: updatedKol.name || null,
+        email: updatedKol.email || null,
+        bio: updatedKol.bio || null,
+        account_link: updatedKol.accountLink ? String(updatedKol.accountLink) : null,
+        source: updatedKol.source || null,
+        filter: updatedKol.filter || null,
+        gender: updatedKol.gender || null,
+        tag: updatedKol.tag || null,
+        language: updatedKol.language || null,
+        location: updatedKol.location || null,
+        slug: updatedKol.slug || null,
+        creator_id: updatedKol.creatorId || null,
+        followers_k: updatedKol.metrics.followersK || null,
+        likes_k: updatedKol.metrics.likesK || null,
+        mean_views_k: updatedKol.metrics.meanViewsK || null,
+        median_views_k: updatedKol.metrics.medianViewsK || null,
+        engagement_rate: updatedKol.metrics.engagementRate || null,
+        average_views_k: updatedKol.metrics.averageViewsK || null,
+        average_likes_k: updatedKol.metrics.averageLikesK || null,
+        average_comments_k: updatedKol.metrics.averageCommentsK || null,
+        send_status: updatedKol.operational.sendStatus || null,
+        level: updatedKol.operational.level || null,
+        keywords_ai: Array.isArray(updatedKol.operational.keywordsAI) ? updatedKol.operational.keywordsAI : [],
+        most_used_hashtags: Array.isArray(updatedKol.operational.mostUsedHashtags) ? updatedKol.operational.mostUsedHashtags : []
+      };
+
+      const response = await fetch(`/api/kols/${updatedKol.kolId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || 'Failed to update KOL');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // 更新成功后刷新数据
+      queryClient.invalidateQueries({ queryKey: ['kols'] });
+      toast.success('KOL 更新成功');
+    },
+    onError: (error) => {
+      console.error('Error updating KOL:', error);
+      toast.error('KOL 更新失败');
+    }
+  });
+
+  // 删除 KOL 的 mutation
+  const deleteKolMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/kols/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete KOL');
+      }
+    },
+    onSuccess: () => {
+      // 删除成功后刷新数据
+      queryClient.invalidateQueries({ queryKey: ['kols'] });
+      toast.success('KOL 删除成功');
+    },
+    onError: (error) => {
+      console.error('Error deleting KOL:', error);
+      toast.error('KOL 删除失败');
+    }
   });
 
   const handleColumnToggle = (columnKey: string) => {
@@ -192,61 +273,12 @@ export default function KOLManagement() {
   };
 
   const handleSave = async (updatedKol: KOL) => {
-    try {
-      const response = await fetch(`/api/kols/${updatedKol.kolId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: updatedKol.name,
-          email: updatedKol.email,
-          bio: updatedKol.bio,
-          account_link: updatedKol.accountLink,
-          source: updatedKol.source,
-          filter: updatedKol.filter,
-          gender: updatedKol.gender,
-          tag: updatedKol.tag,
-          language: updatedKol.language,
-          location: updatedKol.location,
-          slug: updatedKol.slug,
-          creator_id: updatedKol.creatorId,
-          followers_k: updatedKol.metrics.followersK,
-          likes_k: updatedKol.metrics.likesK,
-          mean_views_k: updatedKol.metrics.meanViewsK,
-          median_views_k: updatedKol.metrics.medianViewsK,
-          engagement_rate: updatedKol.metrics.engagementRate,
-          average_views_k: updatedKol.metrics.averageViewsK,
-          average_likes_k: updatedKol.metrics.averageLikesK,
-          average_comments_k: updatedKol.metrics.averageCommentsK,
-          send_status: updatedKol.operational.sendStatus,
-          level: updatedKol.operational.level,
-          keywords_ai: updatedKol.operational.keywordsAI,
-          most_used_hashtags: updatedKol.operational.mostUsedHashtags
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update KOL');
-      }
-    } catch (error) {
-      console.error('Error updating KOL:', error);
-      // 这里可以添加错误提示
-    }
+    await updateKolMutation.mutateAsync(updatedKol);
   };
 
   const handleDelete = async (id: string) => {
-    try {
-      const response = await fetch(`/api/kols/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete KOL');
-      }
-    } catch (error) {
-      console.error('Error deleting KOL:', error);
-      // 这里可以添加错误提示
+    if (window.confirm('确定要删除这个 KOL 吗？此操作不可恢复。')) {
+      await deleteKolMutation.mutateAsync(id);
     }
   };
 
