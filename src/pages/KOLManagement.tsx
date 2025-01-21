@@ -382,9 +382,7 @@ export default function KOLManagement() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('确定要删除这个 KOL 吗？此操作不可恢复。')) {
-      await deleteKolMutation.mutateAsync(id);
-    }
+    await deleteKolMutation.mutateAsync(id);
   };
 
   const handleCreate = async (newKol: KOL) => {

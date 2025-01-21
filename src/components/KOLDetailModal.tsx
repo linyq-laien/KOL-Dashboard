@@ -161,12 +161,16 @@ export default function KOLDetailModal({
   };
 
   const handleDelete = async () => {
+    if (!kol) return;
+    
     setIsLoading(true);
     try {
-      await onDelete?.(kol.id);
+      await onDelete?.(kol.kolId);
+      toast.success('KOL 删除成功');
       onClose();
     } catch (error) {
       console.error('Error deleting KOL:', error);
+      toast.error('删除失败: ' + (error instanceof Error ? error.message : '未知错误'));
     } finally {
       setIsLoading(false);
       setShowDeleteConfirm(false);
@@ -197,41 +201,8 @@ export default function KOLDetailModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
-      {/* Delete Confirmation Dialog */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 z-60 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">确认删除</h3>
-            <p className="text-gray-600 mb-6">
-              您确定要删除这个 KOL 吗？此操作不可恢复。
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                disabled={isLoading}
-              >
-                取消
-              </button>
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <Trash2 size={18} />
-                )}
-                <span>确认删除</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div 
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden animate-modal-enter"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden animate-modal-enter relative"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -250,7 +221,7 @@ export default function KOLDetailModal({
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            {mode === 'edit' && onDelete && (
+            {mode === 'edit' && onDelete && !showDeleteConfirm && (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 className="px-4 py-2 bg-red-50 text-red-600 rounded-lg flex items-center space-x-2 hover:bg-red-100 transition-colors"
@@ -260,25 +231,51 @@ export default function KOLDetailModal({
                 <span>删除</span>
               </button>
             )}
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              disabled={isLoading}
-            >
-              取消
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Save size={18} />
-              )}
-              <span>{mode === 'create' ? '创建' : '保存'}</span>
-            </button>
+            {showDeleteConfirm ? (
+              <>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  disabled={isLoading}
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Trash2 size={18} />
+                  )}
+                  <span>确认删除</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={isLoading}
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Save size={18} />
+                  )}
+                  <span>{mode === 'create' ? '创建' : '保存'}</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
 
