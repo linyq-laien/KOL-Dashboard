@@ -27,6 +27,32 @@ services:
   #   depends_on:
   #     - postgres
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile_api
+    container_name: kol-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=kol_db
+      - DB_USER=kol_user
+      - DB_PASSWORD=kol_password
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - kol-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
     container_name: kol-postgres

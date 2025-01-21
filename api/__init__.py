@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
-
+from sqlalchemy import text
+from .dependencies import get_db
 from .routers import kol
 
 app = FastAPI(
@@ -23,4 +24,9 @@ app.include_router(kol.router)
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to KOL Dashboard API"} 
+    return {"message": "Welcome to KOL Dashboard API"}
+
+@app.get("/health", status_code=status.HTTP_200_OK)
+async def health_check():
+    """健康检查端点"""
+    return {"status": "healthy"} 
