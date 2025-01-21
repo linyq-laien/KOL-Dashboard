@@ -1,46 +1,28 @@
-from typing import Generator
-from sqlalchemy import create_engine, URL
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import QueuePool
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.orm import DeclarativeBase
 
 # 数据库连接配置
-DATABASE_URL = URL.create(
-    drivername="postgresql+psycopg2",
-    username="kol_user",
-    password="kol_password",
-    host="localhost",
-    port=5432,
-    database="kol_db"
-)
+DATABASE_URL = "postgresql+asyncpg://kol_user:kol_password@localhost:5432/kol_db"
 
-# 创建数据库引擎
-engine = create_engine(
+# 创建异步数据库引擎
+engine = create_async_engine(
     DATABASE_URL,
-    poolclass=QueuePool,
+    echo=False,
     pool_size=5,
     max_overflow=10,
     pool_timeout=30,
-    pool_pre_ping=True,
-    echo=False
+    pool_pre_ping=True
 )
 
-# 创建会话工厂
-SessionLocal = sessionmaker(
-    bind=engine,
+# 创建异步会话工厂
+async_session_maker = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
     autocommit=False,
-    autoflush=False,
-    expire_on_commit=False
+    autoflush=False
 )
 
 # 声明基类
-Base = declarative_base()
-
-# 获取数据库会话
-def get_db() -> Generator:
-    """获取数据库会话"""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close() 
+class Base(DeclarativeBase):
+    pass 
