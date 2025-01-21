@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # web:
+  #   build: 
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: kol-dashboard
+  #   ports:
+  #     - "80:80"
+  #   environment:
+  #     - NODE_ENV=production
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - DB_NAME=kol_db
+  #     - DB_USER=kol_user
+  #     - DB_PASSWORD=kol_password
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:80"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+  #   networks:
+  #     - kol-network
+  #   depends_on:
+  #     - postgres
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: kol-postgres
+    environment:
+      - POSTGRES_DB=kol_db
+      - POSTGRES_USER=kol_user
+      - POSTGRES_PASSWORD=kol_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - kol-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kol_user -d kol_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: kol-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@kol.com
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - kol-network
+    depends_on:
+      - postgres
+
+networks:
+  kol-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  pgadmin_data: 
