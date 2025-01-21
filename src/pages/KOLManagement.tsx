@@ -350,7 +350,7 @@ export default function KOLManagement() {
                   <th
                     key={column.key}
                     className={`px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200
-                      ${column.key === 'name' ? 'sticky left-0 bg-gray-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] z-10' : ''}`}
+                      ${column.key === 'kolId' ? 'sticky left-0 bg-gray-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] z-10' : ''}`}
                     title={column.tooltip}
                   >
                     {column.title}
@@ -369,13 +369,13 @@ export default function KOLManagement() {
                     <td
                       key={column.key}
                       className={`px-6 py-4 whitespace-nowrap text-sm ${
-                        column.key === 'name' 
+                        column.key === 'kolId' 
                           ? 'sticky left-0 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] z-10' 
                           : ''
                       } ${
                         rowIndex % 2 === 0 
-                          ? column.key === 'name' ? 'bg-white' : ''
-                          : column.key === 'name' ? 'bg-gray-50' : ''
+                          ? column.key === 'kolId' ? 'bg-white' : ''
+                          : column.key === 'kolId' ? 'bg-gray-50' : ''
                       }`}
                     >
                       {column.key === 'name' ? (
