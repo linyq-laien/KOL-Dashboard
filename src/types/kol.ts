@@ -1,8 +1,28 @@
-export type Gender = 'MALE' | 'FEMALE';
+export type Gender = 'MALE' | 'FEMALE' | 'LGBT';
 
-export type SendStatus = 'SENT' | 'PENDING' | 'FAILED';
+export type SendStatus = 
+  | 'Round No.1' 
+  | 'Round No.2'
+  | 'Round No.3'
+  | 'Round No.4'
+  | 'Round No.5'
+  | 'Round No.6'
+  | 'Round No.7'
+  | 'Round No.8'
+  | 'Round No.9'
+  | 'Round No.10'
+  | 'Round No.11'
+  | 'Round No.12'
+  | 'Round No.13'
+  | 'Round No.14'
+  | 'Round No.15'
+  | 'Round No.16'
+  | 'Round No.17'
+  | 'Round No.18'
+  | 'Round No.19'
+  | 'Round No.20';
 
-export type KOLLevel = 'MEGA' | 'MACRO' | 'MID' | 'MICRO' | 'NANO';
+export type KOLLevel = 'Mid 50k-500k' | 'Micro 10k-50k' | 'Nano 1-10k';
 
 export type CollaborationType = 'LIVESTREAM' | 'SHORT_VIDEO' | 'POST';
 

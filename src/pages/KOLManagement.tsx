@@ -6,47 +6,103 @@ import TableFilter from '../components/TableFilter';
 import { useSidebar } from '../contexts/SidebarContext';
 import PageLayout from '../components/PageLayout';
 import KOLDetailModal from '../components/KOLDetailModal';
+import { useQuery } from '@tanstack/react-query';
 
-// 模拟数据生成函数
-function generateMockData(count: number): KOL[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `kol${i + 1}`,
-    kolId: `kol_${Math.random().toString(36).substring(7)}`,
-    email: `${Math.random().toString(36).substring(7)}@example.com`,
-    name: `KOL ${i + 1}`,
-    bio: `Content creator focusing on ${i % 2 === 0 ? 'lifestyle' : 'fashion'}`,
-    accountLink: `https://platform.com/user${i + 1}`,
-    source: i % 3 === 0 ? 'TikTok' : i % 3 === 1 ? 'Instagram' : 'YouTube',
-    filter: i % 2 === 0 ? 'nano-fitness' : 'diet-2603',
-    gender: i % 2 === 0 ? 'MALE' : 'FEMALE',
-    tag: ['lifestyle', 'fitness', 'health'][i % 3],
-    language: i % 2 === 0 ? 'English' : 'Chinese',
-    location: ['United States', 'United Kingdom', 'Canada', 'Australia'][i % 4],
-    slug: `kol-${Math.random().toString(36).substring(7)}`,
-    creatorId: Math.random().toString().slice(2, 18),
-    metrics: {
-      followersK: Number((Math.random() * 1000).toFixed(1)),
-      likesK: Number((Math.random() * 800).toFixed(1)),
-      meanViewsK: Number((Math.random() * 500).toFixed(1)),
-      medianViewsK: Number((Math.random() * 400).toFixed(1)),
-      engagementRate: Number((Math.random() * 15).toFixed(2)),
-      averageViewsK: Number((Math.random() * 600).toFixed(1)),
-      averageLikesK: Number((Math.random() * 200).toFixed(1)),
-      averageCommentsK: Number((Math.random() * 20).toFixed(1))
-    },
-    operational: {
-      sendStatus: i % 3 === 0 ? 'SENT' : i % 3 === 1 ? 'PENDING' : 'FAILED',
-      sendDate: new Date(Date.now() - Math.floor(Math.random() * 10000000000)),
-      exportDate: new Date(Date.now() - Math.floor(Math.random() * 10000000000)),
-      level: i % 5 === 0 ? 'MEGA' : i % 5 === 1 ? 'MACRO' : i % 5 === 2 ? 'MID' : i % 5 === 3 ? 'MICRO' : 'NANO',
-      keywordsAI: ['Coach', 'Champion', 'Fitness'][i % 3].split(','),
-      mostUsedHashtags: ['#mentalhealth', '#selfcare', '#lifestyle'][i % 3].split(',')
-    },
-    collaborations: []
-  }));
-}
+// API调用函数
+const fetchKOLs = async (
+  page: number,
+  size: number,
+  filters: Array<{
+    column: string;
+    operator: string;
+    value: string | number;
+  }>
+): Promise<{
+  total: number;
+  items: KOL[];
+  page: number;
+  size: number;
+  pages: number;
+}> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    size: size.toString(),
+  });
 
-const mockKOLs = generateMockData(20000);
+  // 转换过滤条件
+  filters.forEach(filter => {
+    const value = filter.value;
+    switch (filter.column) {
+      case 'followersK':
+        if (filter.operator === 'greater') {
+          params.append('min_followers', value.toString());
+        } else if (filter.operator === 'less') {
+          params.append('max_followers', value.toString());
+        }
+        break;
+      case 'name':
+      case 'level':
+      case 'gender':
+      case 'location':
+      case 'source':
+      case 'sendStatus':
+        params.append(
+          filter.column === 'sendStatus' ? 'send_status' : filter.column.toLowerCase(),
+          value.toString()
+        );
+        break;
+    }
+  });
+
+  const response = await fetch(`/api/kols?${params.toString()}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch KOLs');
+  }
+
+  const data = await response.json();
+  
+  // 转换响应数据格式
+  return {
+    total: data.total,
+    page: data.page,
+    size: data.size,
+    pages: data.pages,
+    items: data.items.map((item: any) => ({
+      id: item.id.toString(),
+      kolId: item.kol_id,
+      email: item.email,
+      name: item.name,
+      bio: item.bio,
+      accountLink: item.account_link,
+      source: item.source,
+      filter: item.filter,
+      gender: item.gender,
+      tag: item.tag,
+      language: item.language,
+      location: item.location,
+      slug: item.slug,
+      creatorId: item.creator_id,
+      metrics: {
+        followersK: item.followers_k,
+        likesK: item.likes_k,
+        meanViewsK: item.mean_views_k,
+        medianViewsK: item.median_views_k,
+        engagementRate: item.engagement_rate,
+        averageViewsK: item.average_views_k,
+        averageLikesK: item.average_likes_k,
+        averageCommentsK: item.average_comments_k
+      },
+      operational: {
+        sendStatus: item.send_status,
+        sendDate: new Date(item.send_date),
+        exportDate: new Date(item.export_date),
+        level: item.level,
+        keywordsAI: item.keywords_ai || [],
+        mostUsedHashtags: item.most_used_hashtags || []
+      }
+    }))
+  };
+};
 
 interface Column {
   key: string;
@@ -89,9 +145,19 @@ export default function KOLManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [visibleColumns, setVisibleColumns] = useState(columns.map(col => col.key));
-  const [filters, setFilters] = useState<any[]>([]);
+  const [filters, setFilters] = useState<Array<{
+    column: string;
+    operator: string;
+    value: string | number;
+  }>>([]);
   const [selectedKOL, setSelectedKOL] = useState<KOL | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 使用 React Query 获取数据
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['kols', currentPage, pageSize, filters],
+    queryFn: () => fetchKOLs(currentPage, pageSize, filters)
+  });
 
   const handleColumnToggle = (columnKey: string) => {
     if (visibleColumns.includes(columnKey)) {
@@ -101,51 +167,92 @@ export default function KOLManagement() {
     }
   };
 
-  const filteredData = useMemo(() => {
-    return mockKOLs.filter(kol => {
-      if (filters.length === 0) return true;
-      
-      return filters.every(filter => {
-        const value = filter.column.includes('.')
-          ? filter.column.split('.').reduce((obj: any, key: string) => obj?.[key], kol)
-          : filter.column === 'followersK' || filter.column === 'likesK' || filter.column === 'engagementRate'
-            ? kol.metrics[filter.column as keyof KOLMetrics]
-            : filter.column === 'level' || filter.column === 'sendStatus'
-              ? kol.operational[filter.column as keyof KOLOperationalData]
-              : (kol as any)[filter.column];
-
-        switch (filter.operator) {
-          case 'equals':
-            return String(value) === filter.value;
-          case 'contains':
-            return String(value).toLowerCase().includes(filter.value.toLowerCase());
-          case 'greater':
-            return Number(value) > Number(filter.value);
-          case 'less':
-            return Number(value) < Number(filter.value);
-          default:
-            return true;
-        }
+  const handleSave = async (updatedKol: KOL) => {
+    try {
+      const response = await fetch(`/api/kols/${updatedKol.kolId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: updatedKol.name,
+          email: updatedKol.email,
+          bio: updatedKol.bio,
+          account_link: updatedKol.accountLink,
+          source: updatedKol.source,
+          filter: updatedKol.filter,
+          gender: updatedKol.gender,
+          tag: updatedKol.tag,
+          language: updatedKol.language,
+          location: updatedKol.location,
+          slug: updatedKol.slug,
+          creator_id: updatedKol.creatorId,
+          followers_k: updatedKol.metrics.followersK,
+          likes_k: updatedKol.metrics.likesK,
+          mean_views_k: updatedKol.metrics.meanViewsK,
+          median_views_k: updatedKol.metrics.medianViewsK,
+          engagement_rate: updatedKol.metrics.engagementRate,
+          average_views_k: updatedKol.metrics.averageViewsK,
+          average_likes_k: updatedKol.metrics.averageLikesK,
+          average_comments_k: updatedKol.metrics.averageCommentsK,
+          send_status: updatedKol.operational.sendStatus,
+          level: updatedKol.operational.level,
+          keywords_ai: updatedKol.operational.keywordsAI,
+          most_used_hashtags: updatedKol.operational.mostUsedHashtags
+        }),
       });
-    });
-  }, [filters]);
 
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [filteredData, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-
-  const handleSave = (updatedKol: KOL) => {
-    // 在实际应用中,这里应该调用API更新数据
-    console.log('Saving updated KOL:', updatedKol);
+      if (!response.ok) {
+        throw new Error('Failed to update KOL');
+      }
+    } catch (error) {
+      console.error('Error updating KOL:', error);
+      // 这里可以添加错误提示
+    }
   };
 
-  const handleDelete = (id: string) => {
-    // 在实际应用中,这里应该调用API删除数据
-    console.log('Deleting KOL:', id);
+  const handleDelete = async (id: string) => {
+    try {
+      const response = await fetch(`/api/kols/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete KOL');
+      }
+    } catch (error) {
+      console.error('Error deleting KOL:', error);
+      // 这里可以添加错误提示
+    }
   };
+
+  // 加载状态
+  if (isLoading) {
+    return (
+      <PageLayout
+        title="KOL Management"
+        description="Manage and monitor your KOL resources"
+      >
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // 错误状态
+  if (isError) {
+    return (
+      <PageLayout
+        title="KOL Management"
+        description="Manage and monitor your KOL resources"
+      >
+        <div className="flex justify-center items-center h-64">
+          <div className="text-red-600">Error loading KOLs: {(error as Error).message}</div>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout
@@ -190,7 +297,7 @@ export default function KOLManagement() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedData.map((kol, rowIndex) => (
+              {data?.items.map((kol, rowIndex) => (
                 <tr 
                   key={kol.id} 
                   className={`hover:bg-blue-50/60 transition-colors cursor-pointer
@@ -244,15 +351,10 @@ export default function KOLManagement() {
                         </span>
                       ) : column.key === 'sendStatus' ? (
                         <span className={`px-2.5 py-1 text-xs leading-4 font-semibold rounded-full 
-                          ${kol.operational.sendStatus === 'SENT' 
-                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                            : kol.operational.sendStatus === 'PENDING'
-                            ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                            : 'bg-red-100 text-red-800 hover:bg-red-200'
-                          } transition-colors`}
+                          ${kol.operational.sendStatus ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'} 
+                          transition-colors`}
                         >
-                          {kol.operational.sendStatus === 'SENT' ? '已发送' :
-                           kol.operational.sendStatus === 'PENDING' ? '待发送' : '发送失败'}
+                          {kol.operational.sendStatus || '未发送'}
                         </span>
                       ) : column.key === 'followersK' || column.key === 'likesK' ? (
                         <div className="text-gray-900 font-medium">
@@ -295,7 +397,7 @@ export default function KOLManagement() {
               ))}
             </select>
             <span className="text-sm text-gray-700 whitespace-nowrap">
-              条 | 总计 {filteredData.length} 条
+              条 | 总计 {data?.total || 0} 条
             </span>
           </div>
 
@@ -315,18 +417,18 @@ export default function KOLManagement() {
               上一页
             </button>
             <span className="text-sm text-gray-700 px-2">
-              第 {currentPage} 页 / 共 {totalPages} 页
+              第 {currentPage} 页 / 共 {data?.pages || 0} 页
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === (data?.pages || 0)}
               className="px-3.5 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition-colors"
             >
               下一页
             </button>
             <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(data?.pages || 0)}
+              disabled={currentPage === (data?.pages || 0)}
               className="px-3.5 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white transition-colors"
             >
               末页
