@@ -201,7 +201,7 @@ export default function KOLDetailModal({
                       type="text"
                       value={editedKol?.kolId || ''}
                       readOnly
-                      className="w-full rounded-lg border-gray-300 bg-gray-50 cursor-not-allowed text-gray-500"
+                      className="w-full px-2 rounded-lg border-gray-300 bg-gray-50 cursor-not-allowed text-gray-500"
                     />
                   </div>
                   <div>
@@ -215,7 +215,7 @@ export default function KOLDetailModal({
                       type="email"
                       value={editedKol?.email || ''}
                       onChange={(e) => setEditedKol(prev => prev ? {...prev, email: e.target.value} : null)}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -229,7 +229,7 @@ export default function KOLDetailModal({
                       type="text"
                       value={editedKol?.name || ''}
                       onChange={(e) => setEditedKol(prev => prev ? {...prev, name: e.target.value} : null)}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   <div className="col-span-3">
@@ -238,7 +238,7 @@ export default function KOLDetailModal({
                       value={editedKol?.bio || ''}
                       onChange={(e) => setEditedKol(prev => prev ? {...prev, bio: e.target.value} : null)}
                       rows={3}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 py-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter KOL's bio..."
                     />
                   </div>
@@ -260,7 +260,7 @@ export default function KOLDetailModal({
                     <select
                       value={editedKol?.gender || ''}
                       onChange={(e) => setEditedKol(prev => prev ? {...prev, gender: e.target.value as 'MALE' | 'FEMALE'} : null)}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="MALE">Male / 男</option>
                       <option value="FEMALE">Female / 女</option>
@@ -276,7 +276,7 @@ export default function KOLDetailModal({
                     <select
                       value={editedKol?.language || ''}
                       onChange={(e) => setEditedKol(prev => prev ? {...prev, language: e.target.value} : null)}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="English">English</option>
                       <option value="Chinese">Chinese</option>
@@ -293,7 +293,7 @@ export default function KOLDetailModal({
                       type="text"
                       value={editedKol?.location || ''}
                       onChange={(e) => setEditedKol(prev => prev ? {...prev, location: e.target.value} : null)}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -315,7 +315,7 @@ export default function KOLDetailModal({
                       type="text"
                       value={editedKol?.source || ''}
                       onChange={(e) => setEditedKol(prev => prev ? {...prev, source: e.target.value} : null)}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -329,7 +329,7 @@ export default function KOLDetailModal({
                       type="url"
                       value={editedKol?.accountLink || ''}
                       onChange={(e) => setEditedKol(prev => prev ? {...prev, accountLink: e.target.value} : null)}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -343,7 +343,7 @@ export default function KOLDetailModal({
                       type="text"
                       value={editedKol?.filter || ''}
                       onChange={(e) => setEditedKol(prev => prev ? {...prev, filter: e.target.value} : null)}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -373,7 +373,7 @@ export default function KOLDetailModal({
                           ...prev,
                           metrics: {...prev.metrics, followersK: Number(e.target.value)}
                         } : null)}
-                        className="w-full bg-white rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                       <p className="text-xs text-blue-600 mt-1">Thousand (K)</p>
                     </div>
@@ -389,7 +389,7 @@ export default function KOLDetailModal({
                           ...prev,
                           metrics: {...prev.metrics, likesK: Number(e.target.value)}
                         } : null)}
-                        className="w-full bg-white rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                       />
                       <p className="text-xs text-pink-600 mt-1">Thousand (K)</p>
                     </div>
@@ -405,7 +405,7 @@ export default function KOLDetailModal({
                           ...prev,
                           metrics: {...prev.metrics, meanViewsK: Number(e.target.value)}
                         } : null)}
-                        className="w-full bg-white rounded-lg border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                       <p className="text-xs text-purple-600 mt-1">Thousand (K)</p>
                     </div>
@@ -422,7 +422,7 @@ export default function KOLDetailModal({
                           ...prev,
                           metrics: {...prev.metrics, engagementRate: Number(e.target.value)}
                         } : null)}
-                        className="w-full bg-white rounded-lg border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       />
                       <p className="text-xs text-green-600 mt-1">Percentage (%)</p>
                     </div>
@@ -444,7 +444,7 @@ export default function KOLDetailModal({
                           ...prev,
                           metrics: {...prev.metrics, medianViewsK: Number(e.target.value)}
                         } : null)}
-                        className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -456,7 +456,7 @@ export default function KOLDetailModal({
                           ...prev,
                           metrics: {...prev.metrics, averageViewsK: Number(e.target.value)}
                         } : null)}
-                        className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -468,7 +468,7 @@ export default function KOLDetailModal({
                           ...prev,
                           metrics: {...prev.metrics, averageLikesK: Number(e.target.value)}
                         } : null)}
-                        className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -480,7 +480,7 @@ export default function KOLDetailModal({
                           ...prev,
                           metrics: {...prev.metrics, averageCommentsK: Number(e.target.value)}
                         } : null)}
-                        className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -511,7 +511,7 @@ export default function KOLDetailModal({
                         ...prev,
                         operational: {...prev.operational, level: e.target.value as any}
                       } : null)}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="Mid 50k-500k">Mid (50k-500k)</option>
                       <option value="Micro 10k-50k">Micro (10k-50k)</option>
@@ -531,7 +531,7 @@ export default function KOLDetailModal({
                         ...prev,
                         operational: {...prev.operational, sendStatus: e.target.value as any}
                       } : null)}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       {Array.from({ length: 20 }, (_, i) => i + 1).map(num => (
                         <option key={num} value={`Round No.${num}`}>Round No.{num}</option>
@@ -557,7 +557,7 @@ export default function KOLDetailModal({
                           }
                         } : null);
                       }}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -579,7 +579,7 @@ export default function KOLDetailModal({
                           }
                         } : null);
                       }}
-                      className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-2 rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
