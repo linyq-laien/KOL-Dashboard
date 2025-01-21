@@ -1,7 +1,10 @@
 import React from 'react';
 import PageLayout from '../components/PageLayout';
+import { useTimeZone } from '../contexts/TimeZoneContext';
 
 export default function Settings() {
+  const { timeZone, setTimeZone } = useTimeZone();
+
   return (
     <PageLayout
       title="设置"
@@ -114,10 +117,19 @@ export default function Settings() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     时区
                   </label>
-                  <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option>(GMT+08:00) 北京</option>
-                    <option>(GMT+00:00) UTC</option>
+                  <select 
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={timeZone}
+                    onChange={(e) => setTimeZone(e.target.value)}
+                  >
+                    <option value="(GMT+08:00) 北京">(GMT+08:00) 北京</option>
+                    <option value="(GMT+00:00) UTC">(GMT+00:00) UTC</option>
+                    <option value="(GMT-08:00) 洛杉矶">(GMT-08:00) 洛杉矶</option>
+                    <option value="(GMT+09:00) 东京">(GMT+09:00) 东京</option>
                   </select>
+                  <p className="mt-1 text-sm text-gray-500">
+                    时区设置将影响系统中所有时间的显示和输入
+                  </p>
                 </div>
               </div>
             </div>

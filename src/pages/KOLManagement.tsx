@@ -95,8 +95,8 @@ const fetchKOLs = async (
       },
       operational: {
         sendStatus: item.send_status,
-        sendDate: new Date(item.send_date),
-        exportDate: new Date(item.export_date),
+        sendDate: item.send_date ? new Date(item.send_date) : null,
+        exportDate: item.export_date ? new Date(item.export_date) : null,
         level: item.level,
         keywordsAI: item.keywords_ai || [],
         mostUsedHashtags: item.most_used_hashtags || []
@@ -211,6 +211,12 @@ export default function KOLManagement() {
         average_likes_k: updatedKol.metrics.averageLikesK || null,
         average_comments_k: updatedKol.metrics.averageCommentsK || null,
         send_status: updatedKol.operational.sendStatus || null,
+        send_date: updatedKol.operational.sendDate instanceof Date 
+          ? updatedKol.operational.sendDate.toISOString().slice(0, 19).replace('T', ' ')
+          : null,
+        export_date: updatedKol.operational.exportDate instanceof Date 
+          ? updatedKol.operational.exportDate.toISOString().slice(0, 19).replace('T', ' ')
+          : null,
         level: updatedKol.operational.level || null,
         keywords_ai: Array.isArray(updatedKol.operational.keywordsAI) ? updatedKol.operational.keywordsAI : [],
         most_used_hashtags: Array.isArray(updatedKol.operational.mostUsedHashtags) ? updatedKol.operational.mostUsedHashtags : []
@@ -408,6 +414,12 @@ export default function KOLManagement() {
                         >
                           {kol.operational.sendStatus || '未发送'}
                         </span>
+                      ) : column.key === 'sendDate' || column.key === 'exportDate' ? (
+                        <div className="text-gray-900">
+                          {kol.operational[column.key as keyof KOLOperationalData] instanceof Date
+                            ? (kol.operational[column.key as keyof KOLOperationalData] as Date).toLocaleString()
+                            : '-'}
+                        </div>
                       ) : column.key === 'followersK' || column.key === 'likesK' ? (
                         <div className="text-gray-900 font-medium">
                           {kol.metrics[column.key as keyof KOLMetrics]}K

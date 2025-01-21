@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Trash2, User, Mail, Globe, MapPin, Link, Filter, Tag, Users, Heart, Eye, BarChart2, TrendingUp, Calendar, Send } from 'lucide-react';
 import type { KOL } from '../types/kol';
+import { useTimeZone, getTimeZoneOffset } from '../contexts/TimeZoneContext';
 
 interface KOLDetailModalProps {
   kol: KOL | null;
@@ -21,6 +22,7 @@ export default function KOLDetailModal({
   const [activeTab, setActiveTab] = useState('basic'); // basic, metrics, operational
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { timeZone } = useTimeZone();
 
   useEffect(() => {
     setEditedKol(kol);
@@ -60,6 +62,22 @@ export default function KOLDetailModal({
     { id: 'metrics', label: 'Metrics / 数据指标', icon: BarChart2 },
     { id: 'operational', label: 'Operational / 运营数据', icon: TrendingUp }
   ];
+
+  // 转换时间显示
+  const formatDateToLocal = (date: Date | undefined) => {
+    if (!date) return '';
+    const offset = getTimeZoneOffset(timeZone);
+    const localDate = new Date(date.getTime() + (offset * 60 - date.getTimezoneOffset()) * 60000);
+    return localDate.toISOString().slice(0, 16);
+  };
+
+  // 从本地时间转换为 UTC
+  const parseLocalToUTC = (dateString: string) => {
+    if (!dateString) return undefined;
+    const offset = getTimeZoneOffset(timeZone);
+    const date = new Date(dateString);
+    return new Date(date.getTime() - offset * 60 * 60000);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -529,11 +547,16 @@ export default function KOLDetailModal({
                     </label>
                     <input
                       type="datetime-local"
-                      value={editedKol?.operational.sendDate ? new Date(editedKol.operational.sendDate).toISOString().slice(0, 16) : ''}
-                      onChange={(e) => setEditedKol(prev => prev ? {
-                        ...prev,
-                        operational: {...prev.operational, sendDate: new Date(e.target.value)}
-                      } : null)}
+                      value={formatDateToLocal(editedKol?.operational.sendDate)}
+                      onChange={(e) => {
+                        setEditedKol(prev => prev ? {
+                          ...prev,
+                          operational: {
+                            ...prev.operational,
+                            sendDate: e.target.value ? parseLocalToUTC(e.target.value) : undefined
+                          }
+                        } : null);
+                      }}
                       className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -546,11 +569,16 @@ export default function KOLDetailModal({
                     </label>
                     <input
                       type="datetime-local"
-                      value={editedKol?.operational.exportDate ? new Date(editedKol.operational.exportDate).toISOString().slice(0, 16) : ''}
-                      onChange={(e) => setEditedKol(prev => prev ? {
-                        ...prev,
-                        operational: {...prev.operational, exportDate: new Date(e.target.value)}
-                      } : null)}
+                      value={formatDateToLocal(editedKol?.operational.exportDate)}
+                      onChange={(e) => {
+                        setEditedKol(prev => prev ? {
+                          ...prev,
+                          operational: {
+                            ...prev.operational,
+                            exportDate: e.target.value ? parseLocalToUTC(e.target.value) : undefined
+                          }
+                        } : null);
+                      }}
                       className="w-full rounded-lg border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
