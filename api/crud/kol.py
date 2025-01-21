@@ -66,7 +66,7 @@ async def get_kols(
     返回: (kols列表, 总数)
     """
     # 构建查询条件
-    query = select(KOL)
+    query = select(KOL).order_by(KOL.updated_at.desc())
     count_query = select(func.count()).select_from(KOL)
     
     if filter_params:
