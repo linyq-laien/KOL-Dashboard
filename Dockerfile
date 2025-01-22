@@ -19,6 +19,9 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
+# Install curl for debugging
+RUN apk add --no-cache curl
+
 # Create nginx log directory
 RUN mkdir -p /var/log/nginx
 
@@ -29,15 +32,11 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Fix permissions
-RUN chown -R nginx:nginx /var/log/nginx /usr/share/nginx/html && \
-    chmod -R 755 /usr/share/nginx/html && \
-    chmod -R 755 /var/log/nginx
-
-# Use nginx user
-USER nginx
+RUN chmod -R 755 /var/log/nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/log/nginx /usr/share/nginx/html
 
 # Expose port
 EXPOSE 80
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"] 
+# Start nginx with proper permissions
+CMD ["/bin/sh", "-c", "nginx -g 'daemon off;' & nginx -t && exec nginx -g 'daemon off;'"] 
