@@ -32,15 +32,15 @@ services:
       start_period: 30s
 
   postgres:
-    image: postgres:15
+    image: postgres:17-alpine
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=kol_dashboard
+      - POSTGRES_USER=kol_user
+      - POSTGRES_PASSWORD=kol_password
+      - POSTGRES_DB=kol_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U kol_user"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -49,7 +49,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4
     environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_EMAIL=admin@kol.com
       - PGADMIN_DEFAULT_PASSWORD=admin
     ports:
       - "5050:80"

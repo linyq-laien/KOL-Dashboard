@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir uvicorn
 
 # 复制应用代码
 COPY . .
@@ -25,4 +26,4 @@ RUN echo 'from fastapi import FastAPI\nfrom fastapi.middleware.cors import CORSM
 EXPOSE 8000
 
 # 启动命令
-CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"] 
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"] 
