@@ -3,6 +3,9 @@ version: '3.8'
 services:
   web:
     image: linyq1/kol-dashboard-frontend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "80:80"
     volumes:

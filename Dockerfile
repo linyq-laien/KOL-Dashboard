@@ -28,12 +28,13 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Add non-root user
-RUN adduser -D -H -u 1000 -s /sbin/nologin www-data && \
-    chown -R www-data:www-data /usr/share/nginx/html /var/log/nginx
+# Fix permissions
+RUN chown -R nginx:nginx /var/log/nginx /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html && \
+    chmod -R 755 /var/log/nginx
 
-# Switch to non-root user
-USER www-data
+# Use nginx user
+USER nginx
 
 # Expose port
 EXPOSE 80
