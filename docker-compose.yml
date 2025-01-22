@@ -5,15 +5,23 @@ services:
     image: linyq1/kol-dashboard-frontend:latest
     ports:
       - "80:80"
+    volumes:
+      - nginx_logs:/var/log/nginx
+    environment:
+      - NODE_ENV=production
     depends_on:
       api:
         condition: service_healthy
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/health"]
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 30s
+      start_period: 10s
 
   api:
     image: linyq1/kol-dashboard-backend:latest
@@ -79,4 +87,5 @@ services:
           memory: 512M
 
 volumes:
-  postgres_data: 
+  postgres_data:
+  nginx_logs: 

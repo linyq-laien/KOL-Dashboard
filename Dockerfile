@@ -19,11 +19,21 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
+# Create nginx log directory
+RUN mkdir -p /var/log/nginx
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration if you have custom config
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Add non-root user
+RUN adduser -D -H -u 1000 -s /sbin/nologin www-data && \
+    chown -R www-data:www-data /usr/share/nginx/html /var/log/nginx
+
+# Switch to non-root user
+USER www-data
 
 # Expose port
 EXPOSE 80
