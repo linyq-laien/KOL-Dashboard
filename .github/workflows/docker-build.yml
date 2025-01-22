@@ -8,16 +8,15 @@ on:
     branches: [ "main" ]
 
 env:
-  REGISTRY: ghcr.io
-  FRONTEND_IMAGE_NAME: ${{ github.repository }}-frontend
-  BACKEND_IMAGE_NAME: ${{ github.repository }}-backend
+  DOCKERHUB_FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/kol-dashboard-frontend
+  DOCKERHUB_BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/kol-dashboard-backend
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      statuses: write
 
     steps:
       - name: Checkout repository
@@ -26,36 +25,37 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to the Container registry
+      - name: Log in to DockerHub
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GIT_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Frontend
+      - name: Extract metadata for Frontend
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
+          images: ${{ env.DOCKERHUB_FRONTEND_IMAGE }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Extract metadata (tags, labels) for Backend
+      - name: Extract metadata for Backend
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
+          images: ${{ env.DOCKERHUB_BACKEND_IMAGE }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Frontend Docker image
         uses: docker/build-push-action@v5
@@ -79,21 +79,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Update deployment status
+      - name: Create Success Status
         if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const workflow = '${{ github.workflow }}';
-            const repo = '${{ github.repository }}';
-            const sha = '${{ github.sha }}';
-            
-            await github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              sha: sha,
-              state: 'success',
-              target_url: `https://github.com/${repo}/actions/runs/${context.runId}`,
-              description: `${workflow} succeeded!`,
-              context: 'Docker Build and Push'
-            }); 
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GIT_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }} \
+            -d '{
+              "state": "success",
+              "description": "Docker images built and pushed successfully to DockerHub",
+              "context": "Docker Build and Push"
+            }' 
