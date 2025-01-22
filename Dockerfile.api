@@ -15,11 +15,18 @@ COPY api/requirements.txt .
 # 安装 Python 依赖
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制应用代码
-COPY api/ .
+# 创建api目录并复制应用代码
+RUN mkdir api
+COPY api/*.py api/
+COPY api/routers api/routers
+COPY api/schemas api/schemas
+COPY api/crud api/crud
+
+# 设置Python路径
+ENV PYTHONPATH=/app
 
 # 暴露端口
 EXPOSE 8000
 
 # 启动命令
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"] 
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"] 

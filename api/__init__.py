@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from .dependencies import get_db
@@ -6,14 +6,14 @@ from .routers import kol
 
 app = FastAPI(
     title="KOL Dashboard API",
-    description="KOL Dashboard 后端API服务",
+    description="KOL Dashboard backend API service",
     version="1.0.0"
 )
 
 # 配置CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 在生产环境中应该设置为具体的域名
+    allow_origins=["*"],  # 在生产环境中应该设置具体的源
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
