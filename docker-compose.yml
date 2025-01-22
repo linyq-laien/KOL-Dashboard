@@ -1,36 +1,33 @@
 version: '3.8'
 
 services:
-  # web:
-  #   build: 
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   container_name: kol-dashboard
-  #   ports:
-  #     - "80:80"
-  #   environment:
-  #     - NODE_ENV=production
-  #     - DB_HOST=postgres
-  #     - DB_PORT=5432
-  #     - DB_NAME=kol_db
-  #     - DB_USER=kol_user
-  #     - DB_PASSWORD=kol_password
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:80"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 40s
-  #   networks:
-  #     - kol-network
-  #   depends_on:
-  #     - postgres
+  web:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: kol-dashboard
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=http://api:8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - kol-network
+    depends_on:
+      api:
+        condition: service_healthy
 
   api:
     build:
-      context: .
-      dockerfile: Dockerfile_api
+      context: ./api
+      dockerfile: Dockerfile
     container_name: kol-api
     ports:
       - "8000:8000"
@@ -40,13 +37,14 @@ services:
       - DB_NAME=kol_db
       - DB_USER=kol_user
       - DB_PASSWORD=kol_password
+      - CORS_ORIGINS=http://localhost,http://localhost:80
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      test: ["CMD", "python", "-c", "import http.client; conn = http.client.HTTPConnection('localhost:8000'); conn.request('GET', '/health'); response = conn.getresponse(); conn.close(); exit(0 if response.status == 200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - kol-network
     depends_on:
