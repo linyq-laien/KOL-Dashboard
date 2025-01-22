@@ -85,6 +85,8 @@ jobs:
           labels: ${{ steps.meta-backend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            INSTALL_DEV=false
 
       - name: Create Success Status
         if: success()

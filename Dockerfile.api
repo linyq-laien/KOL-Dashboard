@@ -16,7 +16,9 @@ RUN apt-get update && apt-get install -y \
 COPY api/requirements.txt .
 
 # 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir "asyncpg>=0.29.0" \
+    && pip install --no-cache-dir "email-validator>=2.1.0.post1"
 
 # 复制应用代码
 COPY api /app/api

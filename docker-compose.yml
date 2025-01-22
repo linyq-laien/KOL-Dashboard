@@ -16,7 +16,9 @@ services:
       start_period: 30s
 
   api:
-    image: linyq1/kol-dashboard-backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     ports:
       - "8000:8000"
     environment:
