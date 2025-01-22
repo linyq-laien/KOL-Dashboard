@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from sqlalchemy.orm import DeclarativeBase
 
 # 从环境变量获取数据库配置
-DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_HOST = os.getenv("DB_HOST", "postgres")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "kol_db")
 DB_USER = os.getenv("DB_USER", "kol_user")

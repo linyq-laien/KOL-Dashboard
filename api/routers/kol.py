@@ -2,12 +2,12 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..dependencies import get_db, get_kol_or_404
-from ..schemas.kol import (
+from api.dependencies import get_db, get_kol_or_404
+from api.schemas.kol import (
     KOLCreate, KOLUpdate, KOLResponse, KOLBatchCreate,
     KOLFilter, PaginatedKOLResponse
 )
-from ..crud import kol as kol_crud
+from api.crud import kol as kol_crud
 
 router = APIRouter(
     prefix="/kols",

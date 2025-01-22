@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+# This file marks the directory as a Python package
+
+from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from .dependencies import get_db
