@@ -2,95 +2,60 @@ version: '3.8'
 
 services:
   web:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    container_name: kol-dashboard
+    image: linyq1/kol-dashboard-frontend:latest
     ports:
       - "80:80"
-    environment:
-      - NODE_ENV=production
-      - VITE_API_URL=http://api:8000
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-      - kol-network
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   api:
-    build:
-      context: ./api
-      dockerfile: Dockerfile
-    container_name: kol-api
+    image: linyq1/kol-dashboard-backend:latest
     ports:
       - "8000:8000"
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=kol_db
-      - DB_USER=kol_user
-      - DB_PASSWORD=kol_password
-      - CORS_ORIGINS=http://localhost,http://localhost:80
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import http.client; conn = http.client.HTTPConnection('localhost:8000'); conn.request('GET', '/health'); response = conn.getresponse(); conn.close(); exit(0 if response.status == 200 else 1)"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - kol-network
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/kol_dashboard
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import http.client; conn = http.client.HTTPConnection('localhost:8000'); conn.request('GET', '/health'); response = conn.getresponse(); exit(0 if response.status == 200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   postgres:
-    image: postgres:17-alpine
-    container_name: kol-postgres
+    image: postgres:15
     environment:
-      - POSTGRES_DB=kol_db
-      - POSTGRES_USER=kol_user
-      - POSTGRES_PASSWORD=kol_password
-    ports:
-      - "5432:5432"
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=kol_dashboard
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - kol-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kol_user -d kol_db"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
 
   pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: kol-pgadmin
+    image: dpage/pgadmin4
     environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@kol.com
-      - PGADMIN_DEFAULT_PASSWORD=admin123
-      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
     ports:
       - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    networks:
-      - kol-network
     depends_on:
-      - postgres
-
-networks:
-  kol-network:
-    driver: bridge
+      postgres:
+        condition: service_healthy
 
 volumes:
-  postgres_data:
-  pgadmin_data: 
+  postgres_data: 

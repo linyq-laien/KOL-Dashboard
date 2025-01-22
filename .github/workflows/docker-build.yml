@@ -22,8 +22,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
 
       - name: Log in to DockerHub
         uses: docker/login-action@v3
@@ -62,6 +67,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
@@ -73,6 +79,7 @@ jobs:
         with:
           context: ./api
           file: ./api/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
@@ -88,6 +95,6 @@ jobs:
             https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }} \
             -d '{
               "state": "success",
-              "description": "Docker images built and pushed successfully to DockerHub",
+              "description": "Multi-arch Docker images built and pushed successfully to DockerHub",
               "context": "Docker Build and Push"
             }' 
