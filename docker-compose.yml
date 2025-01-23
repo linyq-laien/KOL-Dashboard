@@ -2,17 +2,12 @@ version: '3.8'
 
 services:
   web:
-    # image: linyq1/kol-dashboard-frontend:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        - API_URL=http://127.0.0.1:8000
+    image: linyq1/kol-dashboard-frontend:latest
     ports:
       - "28082:80"
     environment:
       - NODE_ENV=production
-      - VITE_API_URL=http://127.0.0.1:8000
+      - VITE_API_URL=http://api:8000
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:80"]
       interval: 10s
@@ -20,3 +15,60 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+  
+  api:
+    image: linyq1/kol-dashboard-backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - POSTGRES_USER=kol_user
+      - POSTGRES_PASSWORD=kol_password
+      - POSTGRES_DB=kol_db
+      - DATABASE_URL=postgresql://kol_user:kol_password@host.docker.internal:5432/kol_db
+      - ASYNC_DATABASE_URL=postgresql+asyncpg://kol_user:kol_password@host.docker.internal:5432/kol_db
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - API_WORKERS=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-kol_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-kol_password}
+      - POSTGRES_DB=${POSTGRES_DB:-kol_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kol_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@admin.com}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin}
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
