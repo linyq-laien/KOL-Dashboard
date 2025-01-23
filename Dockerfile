@@ -13,10 +13,6 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Create env file
-ARG API_URL
-ENV VITE_API_URL=${API_URL}
-
 # Build production code
 RUN npm run build
 
