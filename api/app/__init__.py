@@ -1,10 +1,7 @@
-# This file marks the directory as a Python package
-
-from fastapi import FastAPI, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
-from .dependencies import get_db
-from .routers import kol
+
+from app.api.v1.endpoints import kol
 
 app = FastAPI(
     title="KOL Dashboard API",
@@ -22,13 +19,13 @@ app.add_middleware(
 )
 
 # 注册路由
-app.include_router(kol.router)
+app.include_router(kol.router, prefix="/kols", tags=["KOLs"])
 
 @app.get("/")
 async def root():
     return {"message": "Welcome to KOL Dashboard API"}
 
-@app.get("/health", status_code=status.HTTP_200_OK)
+@app.get("/health")
 async def health_check():
     """健康检查端点"""
-    return {"status": "healthy"} 
+    return {"status": "healthy"}
