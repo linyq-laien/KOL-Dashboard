@@ -25,6 +25,10 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy nginx config template
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
+# Copy env script
+COPY env.sh /docker-entrypoint.d/40-env.sh
+RUN chmod +x /docker-entrypoint.d/40-env.sh
+
 # Default environment variable
 ENV API_URL=http://api:8000
 
