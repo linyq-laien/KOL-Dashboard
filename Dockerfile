@@ -16,11 +16,20 @@ COPY . .
 # Build production code
 RUN npm run build
 
-# Install serve
-RUN npm install -g serve
+# Production stage
+FROM nginx:alpine
+
+# Copy built assets from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx config template
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+
+# Default environment variable
+ENV API_URL=http://api:8000
 
 # Expose port
 EXPOSE 80
 
-# Start serve
-CMD ["serve", "-s", "dist", "-l", "80"] 
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"] 
