@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=host.docker.internal
+      - DB_PORT=5432
+      - POSTGRES_USER=kol_user
+      - POSTGRES_PASSWORD=kol_password
+      - POSTGRES_DB=kol_db
+      - DATABASE_URL=postgresql://kol_user:kol_password@host.docker.internal:5432/kol_db
+      - ASYNC_DATABASE_URL=postgresql+asyncpg://kol_user:kol_password@host.docker.internal:5432/kol_db
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - API_WORKERS=1
+    networks:
+      - kol-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  kol-network:
+    driver: bridge 
