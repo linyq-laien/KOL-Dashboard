@@ -8,6 +8,7 @@ import PageLayout from '../components/PageLayout';
 import KOLDetailModal from '../components/KOLDetailModal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
+import { api } from '../utils/api';
 
 // API调用函数
 const fetchKOLs = async (
@@ -18,57 +19,16 @@ const fetchKOLs = async (
     operator: string;
     value: string | number;
   }>
-): Promise<{
-  total: number;
-  items: KOL[];
-  page: number;
-  size: number;
-  pages: number;
-}> => {
-  const params = new URLSearchParams({
-    page: page.toString(),
-    size: size.toString(),
-  });
-
-  // 转换过滤条件
-  filters.forEach(filter => {
-    const value = filter.value;
-    switch (filter.column) {
-      case 'followersK':
-        if (filter.operator === 'greater') {
-          params.append('min_followers', value.toString());
-        } else if (filter.operator === 'less') {
-          params.append('max_followers', value.toString());
-        }
-        break;
-      case 'name':
-      case 'level':
-      case 'gender':
-      case 'location':
-      case 'source':
-      case 'sendStatus':
-        params.append(
-          filter.column === 'sendStatus' ? 'send_status' : filter.column.toLowerCase(),
-          value.toString()
-        );
-        break;
-    }
-  });
-
-  const response = await fetch(`/api/kols?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch KOLs');
-  }
-
-  const data = await response.json();
+) => {
+  const response = await api.kol.list(page, size, filters);
   
   // 转换响应数据格式
   return {
-    total: data.total,
-    page: data.page,
-    size: data.size,
-    pages: data.pages,
-    items: data.items.map((item: any) => ({
+    total: response.total,
+    page: response.page,
+    size: response.size,
+    pages: response.pages,
+    items: response.items.map((item: any) => ({
       id: item.id.toString(),
       kolId: item.kol_id,
       email: item.email,
@@ -225,23 +185,9 @@ export default function KOLManagement() {
         collaborations: updatedKol.collaborations || []
       };
 
-      const response = await fetch(`/api/kols/${updatedKol.kolId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.detail || 'Failed to update KOL');
-      }
-
-      return response.json();
+      return api.kol.update(updatedKol.kolId, updateData);
     },
     onSuccess: () => {
-      // 更新成功后刷新数据
       queryClient.invalidateQueries({ queryKey: ['kols'] });
       toast.success('KOL 更新成功');
     },
@@ -253,17 +199,8 @@ export default function KOLManagement() {
 
   // 删除 KOL 的 mutation
   const deleteKolMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(`/api/kols/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete KOL');
-      }
-    },
+    mutationFn: (id: string) => api.kol.delete(id),
     onSuccess: () => {
-      // 删除成功后刷新数据
       queryClient.invalidateQueries({ queryKey: ['kols'] });
       toast.success('KOL 删除成功');
     },
@@ -275,97 +212,14 @@ export default function KOLManagement() {
 
   // 创建 KOL 的 mutation
   const createKolMutation = useMutation({
-    mutationFn: async (newKol: Omit<KOL, 'id'>) => {
-      // 准备请求数据，确保类型正确
-      const requestData = {
-        kol_id: newKol.kolId,
-        name: newKol.name || null,
-        email: newKol.email || null,
-        bio: newKol.bio || null,
-        // 确保 account_link 是字符串类型
-        account_link: newKol.accountLink ? `${newKol.accountLink}` : null,
-        source: newKol.source || null,
-        filter: newKol.filter || null,
-        gender: newKol.gender || null,
-        tag: newKol.tag || null,
-        language: newKol.language || null,
-        location: newKol.location || null,
-        slug: newKol.slug || null,
-        creator_id: newKol.creatorId || null,
-        followers_k: newKol.metrics.followersK || null,
-        likes_k: newKol.metrics.likesK || null,
-        mean_views_k: newKol.metrics.meanViewsK || null,
-        median_views_k: newKol.metrics.medianViewsK || null,
-        engagement_rate: newKol.metrics.engagementRate || null,
-        average_views_k: newKol.metrics.averageViewsK || null,
-        average_likes_k: newKol.metrics.averageLikesK || null,
-        average_comments_k: newKol.metrics.averageCommentsK || null,
-        send_status: newKol.operational.sendStatus || null,
-        send_date: newKol.operational.sendDate instanceof Date 
-          ? newKol.operational.sendDate.toISOString().slice(0, 19).replace('T', ' ')
-          : null,
-        export_date: newKol.operational.exportDate instanceof Date 
-          ? newKol.operational.exportDate.toISOString().slice(0, 19).replace('T', ' ')
-          : null,
-        level: newKol.operational.level || null,
-        keywords_ai: Array.isArray(newKol.operational.keywordsAI) ? newKol.operational.keywordsAI : [],
-        most_used_hashtags: Array.isArray(newKol.operational.mostUsedHashtags) ? newKol.operational.mostUsedHashtags : [],
-        collaborations: newKol.collaborations || []
-      };
-
-      console.log('Creating KOL with data:', requestData);  // 添加日志
-
-      const response = await fetch('/api/kols', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // 解析错误信息
-        if (response.status === 422) {
-          const errorDetails = data.detail || [];
-          const formattedErrors = errorDetails.map((error: any) => {
-            const field = error.loc[1];
-            const msg = error.msg;
-            console.error(`Validation error for field ${field}:`, msg);  // 添加字段级别的错误日志
-            return `${field}: ${msg}`;
-          }).join('\n');
-          throw new Error(`数据验证错误:\n${formattedErrors}`);
-        } else if (response.status === 500) {
-          console.error('Server error:', data);  // 添加服务器错误日志
-          if (data.detail?.includes('duplicate')) {
-            throw new Error('邮箱已存在，请使用其他邮箱地址');
-          } else {
-            throw new Error(data.detail || '服务器错误，请稍后重试');
-          }
-        } else {
-          console.error('Unknown error:', data);  // 添加未知错误日志
-          throw new Error(data.detail || '创建失败，请检查输入数据');
-        }
-      }
-
-      return data;
-    },
+    mutationFn: (newKol: KOL) => api.kol.create(newKol),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kols'] });
       toast.success('KOL 创建成功');
-      setIsCreateModalOpen(false);
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       console.error('Error creating KOL:', error);
-      // 使用 toast 显示格式化的错误信息
-      toast.error(error.message, {
-        duration: 5000,  // 延长显示时间
-        style: {
-          maxWidth: '500px',  // 增加宽度以显示更多内容
-          whiteSpace: 'pre-line'  // 保留换行符
-        }
-      });
+      toast.error('KOL 创建失败');
     }
   });
 

@@ -13,30 +13,18 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Create env file
+ARG API_URL
+ENV VITE_API_URL=${API_URL}
+
 # Build production code
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
-
-# Install curl for debugging
-RUN apk add --no-cache curl
-
-# Create nginx log directory
-RUN mkdir -p /var/log/nginx
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Fix permissions
-RUN chmod -R 755 /var/log/nginx /usr/share/nginx/html && \
-    chown -R nginx:nginx /var/log/nginx /usr/share/nginx/html
+# Install serve
+RUN npm install -g serve
 
 # Expose port
 EXPOSE 80
 
-# Start nginx with proper permissions
-CMD ["/bin/sh", "-c", "nginx -g 'daemon off;' & nginx -t && exec nginx -g 'daemon off;'"] 
+# Start serve
+CMD ["serve", "-s", "dist", "-l", "80"] 
