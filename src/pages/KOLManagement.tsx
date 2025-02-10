@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Download, Eye } from 'lucide-react';
-import type { KOL, KOLMetrics, KOLOperationalData } from '../types/kol';
+import type { KOL, KOLMetrics, KOLOperationalData, Gender, KOLPlatform } from '../types/kol';
 import TableColumnSelector from '../components/TableColumnSelector';
 import TableFilter from '../components/TableFilter';
 import { useSidebar } from '../contexts/SidebarContext';
@@ -20,7 +20,17 @@ const fetchKOLs = async (
     value: string | number;
   }>
 ) => {
+  // 打印日志，查看API请求参数
+  console.log('API request parameters:', {
+    page,
+    size,
+    filters
+  });
+
   const response = await api.kol.list(page, size, filters);
+  
+  // 打印日志，查看API响应
+  console.log('API response:', response);
   
   // 转换响应数据格式
   return {
@@ -43,6 +53,7 @@ const fetchKOLs = async (
       location: item.location,
       slug: item.slug,
       creatorId: item.creator_id,
+      platform: item.platform,
       metrics: {
         followersK: item.followers_k,
         likesK: item.likes_k,
@@ -66,40 +77,85 @@ const fetchKOLs = async (
   };
 };
 
+// 修改 Column 接口以匹配 TableFilter 组件的需求
+type FieldType = 'string' | 'enum' | 'number' | 'date';
+
 interface Column {
   key: string;
   title: string;
   tooltip?: string;
+  type: FieldType;
+  enumOptions?: { value: string; label: string }[];
 }
 
 const columns: Column[] = [
-  { key: 'kolId', title: 'KOL ID', tooltip: 'KOL唯一标识' },
-  { key: 'email', title: 'Email', tooltip: '邮箱地址' },
-  { key: 'sendStatus', title: 'Send Status', tooltip: '发送状态' },
-  { key: 'sendDate', title: 'Send Date', tooltip: '发送日期' },
-  { key: 'name', title: 'KOL Name', tooltip: 'KOL名称' },
-  { key: 'bio', title: 'Bio', tooltip: '个人简介' },
-  { key: 'exportDate', title: 'Export Date', tooltip: '导出日期' },
-  { key: 'accountLink', title: 'Account Link', tooltip: '账号链接' },
-  { key: 'source', title: 'Source', tooltip: '平台来源' },
-  { key: 'filter', title: 'Filter', tooltip: '筛选标签' },
-  { key: 'gender', title: 'Gender', tooltip: '性别' },
-  { key: 'tag', title: 'Tag', tooltip: '标签' },
-  { key: 'language', title: 'Language', tooltip: '语言' },
-  { key: 'location', title: 'Location', tooltip: '地区' },
-  { key: 'followersK', title: 'Followers(K)', tooltip: '粉丝数(K)' },
-  { key: 'likesK', title: 'Likes(K)', tooltip: '获赞数(K)' },
-  { key: 'meanViewsK', title: 'Mean Views(K)', tooltip: '平均观看数(K)' },
-  { key: 'medianViewsK', title: 'Median Views(K)', tooltip: '中位观看数(K)' },
-  { key: 'keywordsAI', title: 'Keywords-AI', tooltip: 'AI关键词' },
-  { key: 'level', title: 'Level', tooltip: 'KOL等级' },
-  { key: 'engagementRate', title: 'Engagement Rate(%)', tooltip: '互动率(%)' },
-  { key: 'averageViewsK', title: 'Average Views(K)', tooltip: '平均观看数(K)' },
-  { key: 'averageLikesK', title: 'Average Likes(K)', tooltip: '平均点赞数(K)' },
-  { key: 'averageCommentsK', title: 'Average Comments(K)', tooltip: '平均评论数(K)' },
-  { key: 'mostUsedHashtags', title: 'Most Used Hashtags', tooltip: '常用标签' },
-  { key: 'slug', title: 'Slug', tooltip: '短链接' },
-  { key: 'creatorId', title: 'Creator ID', tooltip: '创作者ID' }
+  { key: 'kolId', title: 'KOL ID', tooltip: 'KOL唯一标识', type: 'string' },
+  { key: 'email', title: 'Email', tooltip: '邮箱地址', type: 'string' },
+  { 
+    key: 'sendStatus', 
+    title: 'Send Status', 
+    tooltip: '发送状态', 
+    type: 'enum',
+    enumOptions: [
+      { value: 'Round No.1', label: 'Round No.1' },
+      { value: 'Round No.2', label: 'Round No.2' },
+      // ... 其他选项
+    ]
+  },
+  { key: 'sendDate', title: 'Send Date', tooltip: '发送日期', type: 'date' },
+  { key: 'name', title: 'KOL Name', tooltip: 'KOL名称', type: 'string' },
+  { key: 'bio', title: 'Bio', tooltip: '个人简介', type: 'string' },
+  { key: 'exportDate', title: 'Export Date', tooltip: '导出日期', type: 'date' },
+  { key: 'accountLink', title: 'Account Link', tooltip: '账号链接', type: 'string' },
+  { key: 'source', title: 'Source', tooltip: '平台来源', type: 'string' },
+  { 
+    key: 'platform', 
+    title: 'Platform', 
+    tooltip: '平台',
+    type: 'enum',
+    enumOptions: [
+      { value: 'TikTok', label: 'TikTok' },
+      { value: 'Instagram', label: 'Instagram' },
+      // ... 其他平台
+    ]
+  },
+  { key: 'filter', title: 'Filter', tooltip: '筛选标签', type: 'string' },
+  { 
+    key: 'gender', 
+    title: 'Gender', 
+    tooltip: '性别',
+    type: 'enum',
+    enumOptions: [
+      { value: 'MALE', label: '男' },
+      { value: 'FEMALE', label: '女' }
+    ]
+  },
+  { key: 'tag', title: 'Tag', tooltip: '标签', type: 'string' },
+  { 
+    key: 'language', 
+    title: 'Language', 
+    tooltip: '语言',
+    type: 'enum',
+    enumOptions: [
+      { value: 'Chinese', label: '中文' },
+      { value: 'English', label: '英文' },
+      // ... 其他语言
+    ]
+  },
+  { key: 'location', title: 'Location', tooltip: '地区', type: 'string' },
+  { key: 'followersK', title: 'Followers(K)', tooltip: '粉丝数(K)', type: 'number' },
+  { key: 'likesK', title: 'Likes(K)', tooltip: '获赞数(K)', type: 'number' },
+  { key: 'meanViewsK', title: 'Mean Views(K)', tooltip: '平均观看数(K)', type: 'number' },
+  { key: 'medianViewsK', title: 'Median Views(K)', tooltip: '中位观看数(K)', type: 'number' },
+  { key: 'keywordsAI', title: 'Keywords-AI', tooltip: 'AI关键词', type: 'string' },
+  { key: 'level', title: 'Level', tooltip: 'KOL等级', type: 'string' },
+  { key: 'engagementRate', title: 'Engagement Rate(%)', tooltip: '互动率(%)', type: 'number' },
+  { key: 'averageViewsK', title: 'Average Views(K)', tooltip: '平均观看数(K)', type: 'number' },
+  { key: 'averageLikesK', title: 'Average Likes(K)', tooltip: '平均点赞数(K)', type: 'number' },
+  { key: 'averageCommentsK', title: 'Average Comments(K)', tooltip: '平均评论数(K)', type: 'number' },
+  { key: 'mostUsedHashtags', title: 'Most Used Hashtags', tooltip: '常用标签', type: 'string' },
+  { key: 'slug', title: 'Slug', tooltip: '短链接', type: 'string' },
+  { key: 'creatorId', title: 'Creator ID', tooltip: '创作者ID', type: 'string' }
 ];
 
 // 渲染标签列表的函数
@@ -126,6 +182,38 @@ const renderTags = (tags: string[] = [], total: number) => {
   );
 };
 
+// 添加一个获取枚举值样式的函数
+const getEnumStyle = (value: string, type: string) => {
+  switch (type) {
+    case 'gender':
+      return value === 'MALE' 
+        ? 'bg-blue-100 text-blue-800' 
+        : 'bg-pink-100 text-pink-800';
+    case 'platform':
+      switch (value) {
+        case 'TikTok':
+          return 'bg-purple-100 text-purple-800';
+        case 'Instagram':
+          return 'bg-orange-100 text-orange-800';
+        default:
+          return 'bg-gray-100 text-gray-800';
+      }
+    case 'language':
+      switch (value) {
+        case 'Chinese':
+          return 'bg-red-100 text-red-800';
+        case 'English':
+          return 'bg-blue-100 text-blue-800';
+        default:
+          return 'bg-gray-100 text-gray-800';
+      }
+    case 'sendStatus':
+      return 'bg-green-100 text-green-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
 export default function KOLManagement() {
   const { isCollapsed } = useSidebar();
   const [currentPage, setCurrentPage] = useState(1);
@@ -139,13 +227,42 @@ export default function KOLManagement() {
   const [selectedKOL, setSelectedKOL] = useState<KOL | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isColumnSelectorOpen, setIsColumnSelectorOpen] = useState(false);
+  
+  const filterRef = useRef<HTMLDivElement>(null);
+  const columnSelectorRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+      if (columnSelectorRef.current && !columnSelectorRef.current.contains(event.target as Node)) {
+        setIsColumnSelectorOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // 使用 React Query 获取数据
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['kols', currentPage, pageSize, filters],
-    queryFn: () => fetchKOLs(currentPage, pageSize, filters)
+    queryFn: () => {
+      // 打印日志，查看发送到API的筛选条件
+      console.log('Sending filters to API:', filters);
+      return fetchKOLs(currentPage, pageSize, filters);
+    }
   });
+
+  useEffect(() => {
+    console.log('Filters updated:', filters);
+  }, [filters]);
 
   // 更新 KOL 的 mutation
   const updateKolMutation = useMutation({
@@ -164,6 +281,7 @@ export default function KOLManagement() {
         location: updatedKol.location || null,
         slug: updatedKol.slug || null,
         creator_id: updatedKol.creatorId || null,
+        platform: updatedKol.platform,
         followers_k: updatedKol.metrics.followersK || null,
         likes_k: updatedKol.metrics.likesK || null,
         mean_views_k: updatedKol.metrics.meanViewsK || null,
@@ -212,7 +330,7 @@ export default function KOLManagement() {
 
   // 创建 KOL 的 mutation
   const createKolMutation = useMutation({
-    mutationFn: (newKol: KOL) => api.kol.create(newKol),
+    mutationFn: (newKol: Omit<KOL, 'id'>) => api.kol.create(newKol),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kols'] });
       toast.success('KOL 创建成功');
@@ -239,9 +357,8 @@ export default function KOLManagement() {
     await deleteKolMutation.mutateAsync(id);
   };
 
-  const handleCreate = async (newKol: KOL) => {
-    const { id, ...kolData } = newKol;
-    await createKolMutation.mutateAsync(kolData);
+  const handleCreate = async (newKol: Omit<KOL, 'id'>) => {
+    await createKolMutation.mutateAsync(newKol);
   };
 
   // 加载状态
@@ -277,17 +394,27 @@ export default function KOLManagement() {
       title="KOL Management"
       description="Manage and monitor your KOL resources"
     >
-      <div className="flex justify-end space-x-4 mb-6">
-        <TableFilter
-          columns={columns}
-          onFilterChange={setFilters}
-        />
-        <TableColumnSelector
-          columns={columns}
-          visibleColumns={visibleColumns}
-          onColumnToggle={handleColumnToggle}
-        />
-        <button className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg flex items-center space-x-2 hover:bg-gray-200 transition-colors">
+      <div className="flex justify-end items-center space-x-4 mb-6">
+        <div ref={filterRef}>
+          <TableFilter
+            columns={columns}
+            onFilterChange={setFilters}
+            isOpen={isFilterOpen}
+            onToggle={() => setIsFilterOpen(!isFilterOpen)}
+          />
+        </div>
+        <div ref={columnSelectorRef}>
+          <TableColumnSelector
+            columns={columns}
+            visibleColumns={visibleColumns}
+            onColumnToggle={handleColumnToggle}
+            isOpen={isColumnSelectorOpen}
+            onToggle={() => setIsColumnSelectorOpen(!isColumnSelectorOpen)}
+          />
+        </div>
+        <button 
+          className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg flex items-center space-x-2 hover:bg-gray-200 transition-colors"
+        >
           <Download size={20} />
           <span>导出</span>
         </button>
@@ -318,7 +445,7 @@ export default function KOLManagement() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data?.items.map((kol, rowIndex) => (
+              {data?.items.map((kol: KOL, rowIndex: number) => (
                 <tr 
                   key={kol.id} 
                   className={`hover:bg-blue-50/60 transition-colors cursor-pointer
@@ -355,9 +482,13 @@ export default function KOLManagement() {
                             <Eye size={16} />
                           </button>
                         </div>
+                      ) : column.type === 'enum' ? (
+                        <span className={`px-2.5 py-1 text-xs leading-5 font-medium rounded-full ${getEnumStyle((kol as any)[column.key], column.key)}`}>
+                          {(kol as any)[column.key] || '-'}
+                        </span>
                       ) : column.key === 'keywordsAI' || column.key === 'mostUsedHashtags' ? (
                         <div className="max-w-md truncate">
-                          {(kol.operational[column.key as keyof KOLOperationalData] as string[] | undefined)?.length > 0
+                          {kol.operational[column.key as keyof KOLOperationalData]?.length > 0
                             ? renderTags(
                                 kol.operational[column.key as keyof KOLOperationalData] as string[],
                                 (kol.operational[column.key as keyof KOLOperationalData] as string[])?.length || 0
@@ -366,14 +497,11 @@ export default function KOLManagement() {
                           }
                         </div>
                       ) : column.key === 'level' ? (
-                        <span className="px-2.5 py-1 text-xs leading-4 font-semibold rounded-full bg-green-100 text-green-800 hover:bg-green-200 transition-colors">
+                        <span className="px-2.5 py-1 text-xs leading-4 font-medium rounded-full bg-green-100 text-green-800">
                           {kol.operational.level || '-'}
                         </span>
                       ) : column.key === 'sendStatus' ? (
-                        <span className={`px-2.5 py-1 text-xs leading-4 font-semibold rounded-full 
-                          ${kol.operational.sendStatus ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'} 
-                          transition-colors`}
-                        >
+                        <span className={`px-2.5 py-1 text-xs leading-4 font-medium rounded-full ${getEnumStyle(kol.operational.sendStatus || '', 'sendStatus')}`}>
                           {kol.operational.sendStatus || '-'}
                         </span>
                       ) : column.key === 'sendDate' || column.key === 'exportDate' ? (
@@ -382,16 +510,9 @@ export default function KOLManagement() {
                             ? (kol.operational[column.key as keyof KOLOperationalData] as Date).toLocaleString()
                             : '-'}
                         </div>
-                      ) : column.key === 'followersK' || column.key === 'likesK' || 
-                         column.key === 'meanViewsK' || column.key === 'medianViewsK' ||
-                         column.key === 'averageViewsK' || column.key === 'averageLikesK' ||
-                         column.key === 'averageCommentsK' ? (
+                      ) : column.type === 'number' ? (
                         <div className="text-gray-900 font-medium">
-                          {kol.metrics[column.key as keyof KOLMetrics] ? `${kol.metrics[column.key as keyof KOLMetrics]}K` : '-'}
-                        </div>
-                      ) : column.key === 'engagementRate' ? (
-                        <div className="text-gray-900 font-medium">
-                          {kol.metrics.engagementRate ? `${kol.metrics.engagementRate}%` : '-'}
+                          {(kol as any)[column.key] ? `${(kol as any)[column.key]}${column.key.includes('Rate') ? '%' : 'K'}` : '-'}
                         </div>
                       ) : (
                         <div className="text-gray-900">
@@ -494,6 +615,7 @@ export default function KOLManagement() {
           location: '',
           slug: '',
           creatorId: '',
+          platform: 'TikTok',
           metrics: {
             followersK: 0,
             likesK: 0,

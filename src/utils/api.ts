@@ -44,6 +44,7 @@ export const api = {
                     case 'gender':
                     case 'location':
                     case 'source':
+                    case 'platform':
                     case 'sendStatus':
                         params.append(
                             filter.column === 'sendStatus' ? 'send_status' : filter.column.toLowerCase(),

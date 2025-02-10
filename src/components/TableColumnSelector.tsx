@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Settings2 } from 'lucide-react';
 
 interface Column {
@@ -10,19 +10,27 @@ interface TableColumnSelectorProps {
   columns: Column[];
   visibleColumns: string[];
   onColumnToggle: (columnKey: string) => void;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
 export default function TableColumnSelector({
   columns,
   visibleColumns,
   onColumnToggle,
+  isOpen: externalIsOpen,
+  onToggle
 }: TableColumnSelectorProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  
+  // 使用外部或内部的状态
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const toggleOpen = onToggle || (() => setInternalIsOpen(!internalIsOpen));
 
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
         className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg flex items-center space-x-2 hover:bg-gray-200"
       >
         <Settings2 size={20} />

@@ -1,7 +1,7 @@
 export type Gender = 'MALE' | 'FEMALE' | 'LGBT';
 
-export type SendStatus = 
-  | 'Round No.1' 
+export type SendStatus =
+  | 'Round No.1'
   | 'Round No.2'
   | 'Round No.3'
   | 'Round No.4'
@@ -25,6 +25,8 @@ export type SendStatus =
 export type KOLLevel = 'Mid 50k-500k' | 'Micro 10k-50k' | 'Nano 1-10k';
 
 export type CollaborationType = 'LIVESTREAM' | 'SHORT_VIDEO' | 'POST';
+
+export type KOLPlatform = 'TikTok' | 'Instagram' | 'Youtube'
 
 export interface KOLBasicInfo {
   id: string;
@@ -86,4 +88,5 @@ export interface KOL {
   metrics: KOLMetrics;
   operational: KOLOperationalData;
   collaborations: CollaborationRecord[];
+  platform: KOLPlatform
 }

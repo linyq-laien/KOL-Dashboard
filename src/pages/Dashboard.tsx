@@ -1,7 +1,54 @@
-import React from 'react';
 import PageLayout from '../components/PageLayout';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../utils/api';
+
+// 获取统计数据的函数
+const fetchDashboardStats = async () => {
+  // 只需要请求第一页,获取total即可
+  const response = await api.kol.list(1, 1, [])
+  
+  return {
+    totalNum: response.total, // 直接使用返回的total
+    activeKols: 10000,
+    averageEngagement: 2.5
+  };
+};
 
 export default function Dashboard() {
+  // 使用 React Query 获取数据
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: fetchDashboardStats
+  });
+
+  // 加载状态
+  if (isLoading) {
+    return (
+      <PageLayout
+        title="数据概览"
+        description="查看和分析您的KOL数据指标"
+      >
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // 错误状态
+  if (isError) {
+    return (
+      <PageLayout
+        title="数据概览"
+        description="查看和分析您的KOL数据指标"
+      >
+        <div className="flex justify-center items-center h-64">
+          <div className="text-red-600">加载数据失败</div>
+        </div>
+      </PageLayout>
+    );
+  }
+
   return (
     <PageLayout
       title="数据概览"
@@ -12,7 +59,9 @@ export default function Dashboard() {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">总KOL数量</h3>
           <div className="flex items-end space-x-2">
-            <span className="text-3xl font-bold text-blue-600">20,000</span>
+            <span className="text-3xl font-bold text-blue-600">
+              {data?.totalNum.toLocaleString()}
+            </span>
             <span className="text-sm text-green-600 mb-1">+2.5%</span>
           </div>
           <p className="text-sm text-gray-500 mt-2">较上月增长</p>
@@ -21,7 +70,9 @@ export default function Dashboard() {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">平均互动率</h3>
           <div className="flex items-end space-x-2">
-            <span className="text-3xl font-bold text-blue-600">5.2%</span>
+            <span className="text-3xl font-bold text-blue-600">
+              {data?.averageEngagement.toFixed(1)}%
+            </span>
             <span className="text-sm text-red-600 mb-1">-0.8%</span>
           </div>
           <p className="text-sm text-gray-500 mt-2">较上月下降</p>
@@ -30,7 +81,9 @@ export default function Dashboard() {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">活跃KOL</h3>
           <div className="flex items-end space-x-2">
-            <span className="text-3xl font-bold text-blue-600">15,230</span>
+            <span className="text-3xl font-bold text-blue-600">
+              {data?.activeKols.toLocaleString()}
+            </span>
             <span className="text-sm text-green-600 mb-1">+1.2%</span>
           </div>
           <p className="text-sm text-gray-500 mt-2">较上月增长</p>
